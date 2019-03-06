@@ -34,13 +34,13 @@ uint8 imgbuff[CAMERA_SIZE];
 uint8 img[CAMERA_H][CAMERA_W]; 
 
 //舵机右左最大值，用作输入限制（占空比，单位万分之）
-uint32 ANGLE_UPPER_LIMIT = 960;
-uint32 ANGLE_LOWER_LIMIT = 620;
+uint32 ANGLE_UPPER_LIMIT = 850;
+uint32 ANGLE_LOWER_LIMIT = 450;
 
 //速度及舵机角度初始值（占空比，单位万分之）
-//620(右） - 960（左）
-uint32 INIT_ANGLE = 800;
-uint32 INIT_SPEED = 1200;
+//450（左）- 850 （右）
+uint32 INIT_ANGLE = 650;
+uint32 INIT_SPEED = 2000;
 
 //初始化
 void init_all();
@@ -76,7 +76,7 @@ void init_all()
   ftm_pwm_init(FTM1, FTM_CH0, 100, INIT_ANGLE); 
   
   //摄像头
-  uart_init(UART0, 9600);
+  uart_init(UART5, 9600);
   camera_init(imgbuff);                                  
 }
 
@@ -105,10 +105,76 @@ int turn_error(uint8 img[][CAMERA_W])
 {
   //图像中点设为第30行第39列，x_comp用于储存计算的赛道中线
   int x_base = 39, y_ref = 30, x_comp;
+//  //新转向算法
+//  if(img[y_ref][x_base] == 0xFF){
+//    int i = x_base, j = x_base;
+//    for(i ; i > 0 ; i--){
+//      if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
+//        break;
+//    }
+//    for(j ; j < CAMERA_W; j++){
+//      if(img[y_ref][j] == 0xFF && img[y_ref][j+1] ==0x00)
+//        break;
+//    }
+//    x_comp = (i + j) / 2;
+//  }
+//  else if(img[y_ref][x_base] == 0x00){
+//    int i = 0, j = 0;
+//    for(i ; i < x_base ; i++){
+//      if(img[y_ref][x_base-i] == 0x00 && img[y_ref][x_base-i-1] == 0xFF)
+//        break;
+//    }
+//    for(j ; j < CAMERA_W-x_base; j++){
+//      if(img[y_ref][x_base+j] == 0x00 && img[y_ref][x_base+j+1] ==0xFF)
+//        break;
+//    }
+//    if(i < j){
+//      int k = x_base - i;
+//      for(k; k > 0; k --){
+//        if(img[y_ref][k] == 0xFF && img[y_ref][k-1] == 0x00)
+//          break;
+//      }
+//      x_comp = (k + x_base - i) / 2;
+//    }
+//    else if (i > j){
+//      int k = x_base + j;
+//      for(k; k > 0; k --){
+//        if(img[y_ref][k] == 0xFF && img[y_ref][k+1] == 0x00)
+//          break;
+//      }
+//      x_comp = (k + x_base + j) / 2;
+//    }
+//  }
+//  
+//  return (x_comp - x_base);
   
+//旧转向算法 
   //左右初始像素均为白
-  if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF)
-    x_comp = x_base;
+  if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
+    int i = 0, j = 0;
+    for(i; i < 80; i++){
+      if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
+        break;
+    }
+    for(j; j <80; j++){
+      if(img[y_ref][CAMERA_W-j] == 0xFF && img[y_ref][CAMERA_W-j-1] == 0x00)
+        break;
+    }
+    if(i - j > 0){
+      for(int k = 0; k < 80; k++){
+        if(img[y_ref][k] == 0xFF && img[y_ref][k+1] == 0x00)
+          x_comp = k / 2;
+      }
+    }
+    else if (i - j < 0){
+      for(int k = 0; k < 80; k++){
+        if(img[y_ref][CAMERA_W-k] == 0xFF && img[y_ref][CAMERA_W-k-1] == 0x00)
+          x_comp = (k + 79) / 2;
+      }
+    }
+    else
+      x_comp = x_base;
+  }
   //左右初始像素均为黑
   else if(img[y_ref][0] == 0x00 && img[y_ref][CAMERA_W-1] == 0x00){
     for(int i = 0; i < 80; i++){
