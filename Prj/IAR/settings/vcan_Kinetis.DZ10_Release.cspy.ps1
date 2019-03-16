@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\common\bin\cspybat" -f "D:\IgnorazWork\ICAR\ZWO\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.general.xcl" --backend -f "D:\IgnorazWork\ICAR\ZWO\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.driver.xcl" 
+& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\common\bin\cspybat" -f "D:\IgnorazWork\ICAR\Zimbabwe-Ostrich\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.general.xcl" --backend -f "D:\IgnorazWork\ICAR\Zimbabwe-Ostrich\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.driver.xcl" 
 }
 else
 {
-& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\common\bin\cspybat" -f "D:\IgnorazWork\ICAR\ZWO\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.general.xcl" --debug_file=$debugfile --backend -f "D:\IgnorazWork\ICAR\ZWO\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.driver.xcl" 
+& "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\common\bin\cspybat" -f "D:\IgnorazWork\ICAR\Zimbabwe-Ostrich\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.general.xcl" --debug_file=$debugfile --backend -f "D:\IgnorazWork\ICAR\Zimbabwe-Ostrich\Prj\IAR\settings\vcan_Kinetis.DZ10_Release.driver.xcl" 
 }

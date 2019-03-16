@@ -40,7 +40,7 @@ uint32 ANGLE_LOWER_LIMIT = 460;
 //速度及舵机角度初始值（占空比，单位万分之）
 //450（左）- 850 （右）
 uint32 INIT_ANGLE = 650;
-uint32 INIT_SPEED = 2300;
+uint32 INIT_SPEED = 2000;
 
 int enter_flag1 = 0, enter_flag2 = 0, enter_flag = 0, exit_flag1 = 0, exit_flag = 0;
 int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;;
@@ -72,7 +72,7 @@ int get_P(int error);
 void init_all()
 {
   //电机
-  //CH1-L1, CH3-L2, CH2-R1, CH4-R2
+  //CH1-L1 CH3-L2 CH0-R1 CH2-R2 
   ftm_pwm_init(FTM0, FTM_CH1, 10*1000, INIT_SPEED);
   ftm_pwm_init(FTM0, FTM_CH2, 10*1000, INIT_SPEED);
   
@@ -89,6 +89,12 @@ void speed_adj(uint32 speed_next)
 {
     ftm_pwm_duty(FTM0, FTM_CH1, speed_next);
     ftm_pwm_duty(FTM0, FTM_CH2, speed_next);
+}
+
+//差速版调整速度
+void speed_adj_res(uint32 speed_left, uint32 speed_right){
+    ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
+    ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
 }
 
 //转向，参数1为角度变量，参数2为原角度
@@ -337,10 +343,17 @@ int get_P(int error)
 }
 
 
-//循迹直行测试main函数
+//void main(void){
+//  init_all();
+//  turn(190, INIT_ANGLE);
+//  speed_adj_res(2300, 0);
+//}
+
+
 void main(void){
   int turn_err, turn_change, abs_error, i = 0;
   uint32 pre_turn = INIT_ANGLE, speed_next = 0, speed_pre = 0;
+  uint32 speed_left = INIT_SPEED, speed_right = INIT_SPEED;
   uint32 turn_angle = 0;
   
   init_all();
@@ -351,12 +364,8 @@ void main(void){
     turn_err = turn_error(img);
     abs_error = abs(turn_err);
     turn_change = get_P(turn_err);
-//    uart_putchar(UART0, '@');
-//    uart_putbuff(UART0, img[30], 80);
-//    uart_putchar(UART0, turn_err);
-//    uart_putchar(UART0, turn_change);
-//    uart_putchar(UART0, '@');
     
+//差速测试注释
     //每4次循环调整一次速度
     if(i == 4){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小
@@ -364,12 +373,6 @@ void main(void){
         speed_next = INIT_SPEED + 500;
       else if (abs_error >= 2 && abs_error < 5)
         speed_next = INIT_SPEED + 500;
-//      else if (abs_error >= 5 && abs_error < 10){
-//        if(speed_pre >= 2500)
-//          speed_next = INIT_SPEED - 700;
-//        else
-//          speed_next = INIT_SPEED - 200;
-//      }
       else if (abs_error >= 5 && abs_error < 20){
         if(speed_pre >= 2500)
           speed_next = INIT_SPEED - 500;
@@ -390,16 +393,100 @@ void main(void){
       }
       else
         speed_next = INIT_SPEED;
-      
-      i = 0;
     }
-    speed_pre = speed_next;
     
+//    //非差速注释
+//    if(i == 4){
+//      //分段调整速度， 直道加速弯道减速，分段依据弯道大小
+//      if(abs_error >= 0 && abs_error <2){
+//        speed_left = INIT_SPEED + 500;
+//        speed_right = INIT_SPEED + 500;
+//      }
+//      else if (abs_error >= 2 && abs_error < 5){
+//        speed_left = INIT_SPEED + 500;
+//        speed_right = INIT_SPEED + 500;
+//      }
+//      else if (abs_error >= 5 && abs_error < 20){
+//        if(turn_err > 0){
+//          if(speed_pre >= 2500){
+//            speed_left = INIT_SPEED - 200;
+//            speed_right = INIT_SPEED - 1500;
+//          }
+//          else{
+//            speed_left = INIT_SPEED - 250;
+//            speed_right = INIT_SPEED - 1200;
+//          }
+//        }
+//        else{
+//          if(speed_pre >= 2500){
+//            speed_left = INIT_SPEED - 1500;
+//            speed_right = INIT_SPEED - 200;
+//          }
+//          else{
+//            speed_left = INIT_SPEED - 1200;
+//            speed_right = INIT_SPEED - 250;
+//          }
+//        }
+//      }
+//      else if(abs_error >= 20 && abs_error < 30){
+//        if(turn_err > 0){
+//          speed_left = INIT_SPEED - 400;
+//          speed_right = INIT_SPEED - 1600;
+//        }
+//        else{
+//          speed_left = INIT_SPEED - 1600;
+//          speed_right = INIT_SPEED - 400;
+//        }
+//      }
+//      else if(abs_error >= 30 && abs_error < 40){
+//        if(turn_err > 0){
+//          if(speed_pre >= 2500){
+//            speed_left = INIT_SPEED - 400;
+//            speed_right = INIT_SPEED - 1800;
+//          }
+//          else{
+//            speed_left = INIT_SPEED - 400;
+//            speed_right = INIT_SPEED - 1700;
+//          }
+//        }
+//        else{
+//          if(speed_pre >= 2500){
+//            speed_left = INIT_SPEED - 1800;
+//            speed_right = INIT_SPEED - 500;
+//          }
+//          else{
+//            speed_left = INIT_SPEED - 1700;
+//            speed_right = INIT_SPEED - 400;
+//          }
+//        }
+//      }
+//      else{
+//        speed_left = INIT_SPEED;
+//        speed_right = INIT_SPEED;
+//      }
+//      i = 0;
+//    }
+    
+//差速测试注释
+    speed_pre = speed_next;
+
+////非差速注释
+//    speed_pre = speed_left;
+
+//差速测试注释    
     if(island_flag == 1 && j > 1){
       turn_change = 0;
       speed_next = 1050;
       j --;
     }
+
+////非差速注释    
+//    if(island_flag == 1 && j > 1){
+//      turn_change = 0;
+//      speed_left = 1050;
+//      speed_right = 1050;
+//      j --;
+//    }
    
     if(turn_flag == 1 && island_flag == 1){
       for(int i = 0; i < 8; i++){
@@ -408,14 +495,20 @@ void main(void){
         DELAY_MS(80);
       }
     }
+    
+    //差速测试注释
     //调整速度并转弯
     speed_adj(speed_next);
+
+////非差速注释    
+//    speed_adj_res(speed_left, speed_right);
+    
     if(turn_flag == 0)
       turn(turn_change, INIT_ANGLE);
     //延迟再次循环
     if(enter_flag == 1)
       DELAY_US(500);
-    DELAY_US(100);
+    DELAY_US(50);
     i += 1;
   
   enter_flag1 = 0;
@@ -428,5 +521,5 @@ void main(void){
   turn_flag = 0;
   island_flag = 0;
   decelerate_flag = 0;
+    }
   }
-}
