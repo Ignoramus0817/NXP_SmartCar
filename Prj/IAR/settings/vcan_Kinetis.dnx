@@ -12,7 +12,7 @@
         <ByteLimit>50</ByteLimit>
     </Stack>
     <DebugChecksum>
-        <Checksum>2650730063</Checksum>
+        <Checksum>4121086188</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -110,10 +110,10 @@
         <JetConnSerialNo>00081</JetConnSerialNo>
         <JetConnFoundProbes />
         <PrevWtdReset>System</PrevWtdReset>
-        <OnlineReset>Software</OnlineReset>
         <DisableInterrupts>0</DisableInterrupts>
         <LeaveRunning>0</LeaveRunning>
         <MultiCoreRunAll>0</MultiCoreRunAll>
+        <OnlineReset>Software</OnlineReset>
     </Jet>
     <ArmDriver>
         <EnableCache>1</EnableCache>
@@ -161,6 +161,13 @@
         <EventLSU>0</EventLSU>
         <EventSLEEP>0</EventSLEEP>
     </SWOTraceWindow>
+    <DisassembleMode>
+        <mode>0</mode>
+    </DisassembleMode>
+    <Breakpoints2>
+        <Bp0>_ 0 "EMUL_DATA" "UART_D_REG" 0 0 0 0 4294967295</Bp0>
+        <Count>1</Count>
+    </Breakpoints2>
     <DriverProfiling>
         <Enabled>0</Enabled>
         <Mode>1</Mode>
@@ -183,26 +190,21 @@
         <LogFile>_ ""</LogFile>
         <Category>_ 0</Category>
     </LogFile>
-    <DisassembleMode>
-        <mode>0</mode>
-    </DisassembleMode>
-    <Breakpoints2>
-        <Bp0>_ 0 "EMUL_DATA" "UART_D_REG" 0 0 0 0 4294967295</Bp0>
-        <Count>1</Count>
-    </Breakpoints2>
     <Aliases>
-        <A0>_ "D:\智能车\练习代码2成功\Chip\src\MK60_uart.c" ""</A0>
-        <A1>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_SysTick.c" ""</A1>
-        <A2>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_mcg.c" ""</A2>
-        <A3>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_port.c" ""</A3>
-        <A4>_ "E:\Users\GodLiu\Desktop\IAR projects\4.23 转向\加速度计陀螺仪\Chip\src\IAR\startup_MK60DZ10.s" ""</A4>
-        <A5>_ "E:\Users\GodLiu\Desktop\IAR projects\5.6\加速度计陀螺仪\App\main.c" ""</A5>
-        <A6>_ "E:\智能车\18-串口加MPU6050培训\MPU6050\Chip\src\IAR\system_MK60DZ10.c" ""</A6>
-        <A7>_ "G:\FreeScale Competition\RoboGame - 10.6\App\main.c" ""</A7>
-        <A8>_ "G:\FreeScale Competition\RoboGame - 10.8 fuben\App\main.c" ""</A8>
-        <A9>_ "G:\FreeScale Competition\招新\培训\Chip\src\IAR\system_MK60DZ10.c" ""</A9>
-        <A10>_ "G:\智能车\第三次培训\第三次培训\练习代码2\App\main.c" ""</A10>
-        <Count>11</Count>
+        <A0>_ "D:\IgnorazWork\ICAR\ZWO\App\main.c" ""</A0>
+        <A1>_ "D:\IgnorazWork\ICAR\ZWO\Chip\src\IAR\system_MK60DZ10.c" ""</A1>
+        <A2>_ "D:\智能车\练习代码2成功\Chip\src\MK60_uart.c" ""</A2>
+        <A3>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_SysTick.c" ""</A3>
+        <A4>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_mcg.c" ""</A4>
+        <A5>_ "E:\SmartCar\IAR\7.17\加速度计陀螺仪\Chip\src\MK60_port.c" ""</A5>
+        <A6>_ "E:\Users\GodLiu\Desktop\IAR projects\4.23 转向\加速度计陀螺仪\Chip\src\IAR\startup_MK60DZ10.s" ""</A6>
+        <A7>_ "E:\Users\GodLiu\Desktop\IAR projects\5.6\加速度计陀螺仪\App\main.c" ""</A7>
+        <A8>_ "E:\智能车\18-串口加MPU6050培训\MPU6050\Chip\src\IAR\system_MK60DZ10.c" ""</A8>
+        <A9>_ "G:\FreeScale Competition\RoboGame - 10.6\App\main.c" ""</A9>
+        <A10>_ "G:\FreeScale Competition\RoboGame - 10.8 fuben\App\main.c" ""</A10>
+        <A11>_ "G:\FreeScale Competition\招新\培训\Chip\src\IAR\system_MK60DZ10.c" ""</A11>
+        <A12>_ "G:\智能车\第三次培训\第三次培训\练习代码2\App\main.c" ""</A12>
+        <Count>13</Count>
         <SuppressDialog>1</SuppressDialog>
     </Aliases>
 </settings>

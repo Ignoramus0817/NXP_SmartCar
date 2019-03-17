@@ -35,15 +35,15 @@ uint8 img[CAMERA_H][CAMERA_W];
 
 //舵机右左最大值，用作输入限制（占空比，单位万分之）
 uint32 ANGLE_UPPER_LIMIT = 840;
-uint32 ANGLE_LOWER_LIMIT = 460;
+uint32 ANGLE_LOWER_LIMIT = 430;
 
 //速度及舵机角度初始值（占空比，单位万分之）
-//450（左）- 850 （右）
+//430（左）- 850 （右）
 uint32 INIT_ANGLE = 650;
-uint32 INIT_SPEED = 2300;
+uint32 INIT_SPEED = 2400;
 
 int enter_flag1 = 0, enter_flag2 = 0, enter_flag = 0, exit_flag1 = 0, exit_flag = 0;
-int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;;
+int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;
 
 //初始化
 void init_all();
@@ -111,6 +111,7 @@ int turn_error(uint8 img[][CAMERA_W])
   int x_base = 39, y_ref = 35, x_comp;
   //y_upper = 19-21, y_lower = 40-42
   int y_upper, y_lower;
+  int turn_p = 0;
 //  //新转向算法
 //  if(img[y_ref][x_base] == 0xFF){
 //    int i = x_base, j = x_base;
@@ -217,6 +218,19 @@ int turn_error(uint8 img[][CAMERA_W])
     else if(max_length <= 5 && max_length > 0)
       turn_flag = 1;
 
+    if(turn_flag == 1){
+      if(max_length == 5)
+        turn_p = 80;
+      else if(max_length == 4)
+        turn_p = 85;
+      else if(max_length == 3)
+        turn_p = 90;
+      else if(max_length == 2)
+        turn_p = 95;
+      else if(max_length == 1)
+        turn_p = 100;
+    }
+    
     if(island_flag == 1 && turn_flag == 1){
       enter_flag = 1;
       exit_flag = 0;
@@ -238,13 +252,20 @@ int turn_error(uint8 img[][CAMERA_W])
   if(enter_flag == 1 && wall_flag == 0){
     for(int i = 0; i < 80; i++){
       if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
-        x_comp = (i + 100) / 2;
+        x_comp = (i + turn_p) / 2;
     }
   }
   else if(exit_flag == 1){
     x_comp = 80;
   }
   else{
+//    int count = 0;
+//    for(int i = 0;i < 80; i++){
+//      if(img[y_ref][i] == 0x00)
+//        count += 1;
+//    }
+//    if(count >= 75 && count < 80)
+//      y_ref = 40;
     //左右初始像素均为白
     if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
       int i = 0, j = 0;
@@ -304,26 +325,15 @@ int get_P(int error)
 {
   int output = 0, ref, P;
   ref = abs(error);
-//  if(ref >= 0 && ref < 5)
-//    P = 0;
-//  else if(ref >= 5 && ref < 20)
-//    P = 18;
-//  else if(ref >= 20 && ref < 25)
-//    P = 23;
-//  else if(ref >= 25 && ref < 30)
-//    P = 37;
-//  else if(ref >= 30 && ref < 60)
-//    P = 40;
-//  else if(ref >= 60 && ref < 80)
-//    P = 45;
+  
   if(ref >= 0 && ref < 5)
     P = 0;
   else if(ref >= 5 && ref < 8)
     P = 17;
   else if(ref >= 8 && ref < 10)
     P = 18;
-  else if(ref >=10 && ref < 15)
-    P = 19;
+  else if(ref >= 10 && ref < 15)
+    P = 20;
   else if(ref >= 15 && ref < 25)
     P = 20;
   else if(ref >= 25 && ref < 30)
@@ -361,9 +371,9 @@ void main(void){
     if(i == 4){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小
       if(abs_error >= 0 && abs_error <2)
-        speed_next = INIT_SPEED + 500;
+        speed_next = INIT_SPEED + 400;
       else if (abs_error >= 2 && abs_error < 5)
-        speed_next = INIT_SPEED + 500;
+        speed_next = INIT_SPEED + 400;
 //      else if (abs_error >= 5 && abs_error < 10){
 //        if(speed_pre >= 2500)
 //          speed_next = INIT_SPEED - 700;
@@ -372,21 +382,21 @@ void main(void){
 //      }
       else if (abs_error >= 5 && abs_error < 20){
         if(speed_pre >= 2500)
-          speed_next = INIT_SPEED - 500;
+          speed_next = INIT_SPEED - 400;
         else
-          speed_next = INIT_SPEED - 550;
+          speed_next = INIT_SPEED - 350;
       }
       else if(abs_error >= 20 && abs_error < 30){
         if(speed_pre >= 2500)
-          speed_next = INIT_SPEED - 600;
+          speed_next = INIT_SPEED - 500;
         else
-          speed_next = INIT_SPEED - 600;
+          speed_next = INIT_SPEED - 500;
       }
       else if(abs_error >= 30 && abs_error < 40){
         if(speed_pre >= 2500)
-          speed_next = INIT_SPEED - 700;
+          speed_next = INIT_SPEED - 600;
         else
-          speed_next = INIT_SPEED - 630;
+          speed_next = INIT_SPEED - 530;
       }
       else
         speed_next = INIT_SPEED;
@@ -396,7 +406,7 @@ void main(void){
     speed_pre = speed_next;
     
     if(island_flag == 1 && j > 1){
-      turn_change = 0;
+      turn_change = -100;
       speed_next = 1050;
       j --;
     }
@@ -414,8 +424,9 @@ void main(void){
       turn(turn_change, INIT_ANGLE);
     //延迟再次循环
     if(enter_flag == 1)
-      DELAY_US(500);
-    DELAY_US(100);
+      DELAY_US(300);
+    if(island_flag == 0)
+      DELAY_US(80);
     i += 1;
   
   enter_flag1 = 0;
