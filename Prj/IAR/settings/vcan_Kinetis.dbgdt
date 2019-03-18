@@ -1340,7 +1340,7 @@
                     <item>turn_change</item>
                     <item>max_length</item>
                     <item>island_flag</item>
-                    <item></item>
+                    <item />
                 </expressions>
                 <col-names>
                     <item>Expression</item>
