@@ -72,7 +72,7 @@ int get_P(int error);
 void init_all()
 {
   //µç»ú
-  //CH1-L1, CH3-L2, CH2-R1, CH4-R2
+  //CH1-L1 CH3-L2 CH0-R1 CH2-R2 
   ftm_pwm_init(FTM0, FTM_CH1, 10*1000, INIT_SPEED);
   ftm_pwm_init(FTM0, FTM_CH2, 10*1000, INIT_SPEED);
   
