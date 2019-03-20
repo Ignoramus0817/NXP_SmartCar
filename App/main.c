@@ -76,8 +76,8 @@ void init_all()
 {
   //电机
   //CH1-L1 CH3-L2 CH0-R1 CH2-R2 
-  ftm_pwm_init(FTM0, FTM_CH3, 10*1000, INIT_SPEED);
-  ftm_pwm_init(FTM0, FTM_CH0, 10*1000, INIT_SPEED);
+  ftm_pwm_init(FTM0, FTM_CH1, 10*1000, INIT_SPEED);
+  ftm_pwm_init(FTM0, FTM_CH2, 10*1000, INIT_SPEED);
   
   //舵机
   ftm_pwm_init(FTM1, FTM_CH0, 100, INIT_ANGLE); 
@@ -111,8 +111,8 @@ void speed_adj(uint32 speed_next)
 
 //差速版调整速度
 void speed_adj_res(uint32 speed_left, uint32 speed_right){
-    ftm_pwm_duty(FTM0, FTM_CH3, speed_left);
-    ftm_pwm_duty(FTM0, FTM_CH0, speed_right);
+    ftm_pwm_duty(FTM0, FTM_CH2, speed_left);
+    ftm_pwm_duty(FTM0, FTM_CH1, speed_right);
 }
 
 //转向，参数1为角度变量，参数2为原角度
@@ -392,7 +392,7 @@ void main(void){
   uint32 turn_angle = 0;
   
   init_all();
-  speed_adj(INIT_SPEED);                                    //启动电机
+   speed_adj(INIT_SPEED);                                    //启动电机
   while(1){
     int j = 180;
     img_get(imgbuff, img); 
@@ -400,36 +400,6 @@ void main(void){
     out_flag = track_lost(img);
     abs_error = abs(turn_err);
     turn_change = get_P(turn_err);
-    
-////差速测试注释
-//    //每4次循环调整一次速度
-//    if(i == 4){
-//      //分段调整速度， 直道加速弯道减速，分段依据弯道大小
-//      if(abs_error >= 0 && abs_error <2)
-//        speed_next = INIT_SPEED + 500;
-//      else if (abs_error >= 2 && abs_error < 5)
-//        speed_next = INIT_SPEED + 500;
-//      else if (abs_error >= 5 && abs_error < 20){
-//        if(speed_pre >= 2500)
-//          speed_next = INIT_SPEED - 500;
-//        else
-//          speed_next = INIT_SPEED - 550;
-//      }
-//      else if(abs_error >= 20 && abs_error < 30){
-//        if(speed_pre >= 2500)
-//          speed_next = INIT_SPEED - 600;
-//        else
-//          speed_next = INIT_SPEED - 600;
-//      }
-//      else if(abs_error >= 30 && abs_error < 40){
-//        if(speed_pre >= 2500)
-//          speed_next = INIT_SPEED - 700;
-//        else
-//          speed_next = INIT_SPEED - 630;
-//      }
-//      else
-//        speed_next = INIT_SPEED;
-//    }
     
     //非差速注释
     if(i == 2){
@@ -549,12 +519,10 @@ void main(void){
       DELAY_US(40);
     i += 1;
     
-    if(out_flag == 1){
-      speed_adj_res(0,0);
-      break;
-    }
-  
+//    if(out_flag == 1){
+//      speed_adj_res(0,0);
+//      break;
     clear_all();
+    }
   }
-  speed_adj_res(0,0);
-}
+//  speed_adj_res(0,0);
