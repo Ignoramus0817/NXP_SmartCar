@@ -1,3 +1,20 @@
+/*!
+ *     COPYRIGHT NOTICE
+ *     Copyright (c) 2013,山外科技
+ *     All rights reserved.
+ *     技术讨论：山外论坛 http://www.vcan123.com
+ *
+ *     除注明出处外，以下所有内容版权均属山外科技所有，未经允许，不得用于商业用途，
+ *     修改内容时必须保留山外科技的版权声明。
+ *
+ * @file       main.c
+ * @brief      山外K60 平台主程序
+ * @author     山外科技
+ * @version    v5.0
+ * @date       2013-08-28
+ */
+////D.Va
+
 #pragma optimize=none
 
 #define FRONT 0
@@ -21,12 +38,13 @@ uint32 ANGLE_UPPER_LIMIT = 840;
 uint32 ANGLE_LOWER_LIMIT = 430;
 
 //速度及舵机角度初始值（占空比，单位万分之）
-//430（左）- 850 （右）
-uint32 INIT_ANGLE = 650;
-uint32 INIT_SPEED = 2400;
+//450（左）- 850 （右）
+uint32 INIT_ANGLE = 635;
+uint32 INIT_SPEED = 3000;
 
 int enter_flag1 = 0, enter_flag2 = 0, enter_flag = 0, exit_flag1 = 0, exit_flag = 0;
 int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;
+int out_flag = 0;
 
 //初始化
 void init_all();
@@ -35,6 +53,7 @@ void clear_all();
 //方向及速度控制
 void speed_adj(uint32 speed_next);
 void turn(int angle_change, uint32 angle_rate);
+void auto_stop(void);
 
 //track detecting
 int turn_error(uint8 img[][CAMERA_W]);
@@ -56,6 +75,7 @@ void init_all()
   camera_init(imgbuff);                                  
 }
 
+//清除所有flag
 void clear_all(){
   enter_flag1 = 0;
   enter_flag2 = 0;
@@ -67,6 +87,7 @@ void clear_all(){
   turn_flag = 0;
   island_flag = 0;
   decelerate_flag = 0;
+  out_flag = 0;
 }
 
 //速度调整，输入为新速度
@@ -76,9 +97,10 @@ void speed_adj(uint32 speed_next)
     ftm_pwm_duty(FTM0, FTM_CH2, speed_next);
 }
 
+//差速版调整速度
 void speed_adj_res(uint32 speed_left, uint32 speed_right){
-  ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
-  ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
+    ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
+    ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
 }
 
 //转向，参数1为角度变量，参数2为原角度
@@ -101,7 +123,6 @@ int turn_error(uint8 img[][CAMERA_W])
   int x_base = 39, y_ref = 35, x_comp;
   //y_upper = 19-21, y_lower = 40-42
   int y_upper, y_lower;
-  int turn_p = 0;
   
   //判断是否有墙
   for(int i = 0;i < CAMERA_W; i++){
@@ -166,19 +187,6 @@ int turn_error(uint8 img[][CAMERA_W])
     else if(max_length <= 5 && max_length > 0)
       turn_flag = 1;
 
-    if(turn_flag == 1){
-      if(max_length == 5)
-        turn_p = 80;
-      else if(max_length == 4)
-        turn_p = 85;
-      else if(max_length == 3)
-        turn_p = 90;
-      else if(max_length == 2)
-        turn_p = 95;
-      else if(max_length == 1)
-        turn_p = 100;
-    }
-    
     if(island_flag == 1 && turn_flag == 1){
       enter_flag = 1;
       exit_flag = 0;
@@ -194,12 +202,13 @@ int turn_error(uint8 img[][CAMERA_W])
   if(exit_flag1 >= 70){
     enter_flag = 0;
     exit_flag = 1;
+//    island_flag3 = 0;
   }
   //旧转向算法 
   if(enter_flag == 1 && wall_flag == 0){
     for(int i = 0; i < 80; i++){
       if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
-        x_comp = (i + turn_p) / 2;
+        x_comp = (i + 100) / 2;
     }
   }
   else if(exit_flag == 1){
@@ -209,6 +218,8 @@ int turn_error(uint8 img[][CAMERA_W])
     //左右初始像素均为白
     if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
       int i = 0, j = 0;
+      if(img[y_ref][x_base] == 0x00)
+        y_ref = 58;
       for(i; i < 80; i++){
         if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
           break;
@@ -244,15 +255,19 @@ int turn_error(uint8 img[][CAMERA_W])
     //左白右黑
     else if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0x00){
       for(int i = 0; i < 80; i++){
-        if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
+        if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00){
           x_comp = i / 2;
+          break;
+        }
       }
     }
     //左黑右白
     else if(img[y_ref][0] == 0x00 && img[y_ref][CAMERA_W-1] == 0xFF){
       for(int i = 0; i < 80; i++){
-        if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
+        if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00){
           x_comp = (i + 79) / 2;
+          break;
+        }
       }
     }
   }
@@ -266,28 +281,47 @@ int get_P(int error)
   int output = 0, ref, P;
   ref = abs(error);
   
-  if(ref >= 0 && ref < 5)
+  if(ref >= 0 && ref < 2)
     P = 0;
-  else if(ref >= 5 && ref < 8)
-    P = 17;
-  else if(ref >= 8 && ref < 10)
-    P = 18;
-  else if(ref >= 10 && ref < 15)
-    P = 20;
+  else if(ref >= 2 && ref < 5)
+    P = 3;
+  else if(ref >= 5 && ref < 7)
+    P = 4;
+  else if(ref >= 7 && ref < 9)
+    P = 8;
+  else if(ref >= 9 && ref < 11)
+    P = 9;
+  else if(ref >= 11 && ref < 13)
+    P = 10;
+  else if(ref >= 13 && ref < 15)
+    P = 11;
   else if(ref >= 15 && ref < 25)
+    P = 19;
+  else if(ref >= 25)
     P = 20;
-  else if(ref >= 25 && ref < 30)
-    P = 21;
-  else if(ref >= 30 && ref < 60)
-    P = 40;
-  else if(ref >= 60 && ref < 80)
-    P = 45;
   output = error * P;
   return output;
 }
 
+//自动停车
+int track_lost(uint8 img[][CAMERA_W]){
+  int count = 0, line_count = 0;
+  for(int i = 0; i < 60; i++){
+    for(int j = 0; j < 80; j++){
+      if(img[i][j] == 0x00)
+        count += 1;
+    }
+    if(count >= 70)
+      line_count += 1;
+    count = 0;
+  }
+  if(line_count >= 50)
+    return 1;
+  else
+    return 0;
+}
 
-//循迹直行测试main函数
+
 void main(void){
   int turn_err, turn_change, abs_error, i = 0;
   uint32 pre_turn = INIT_ANGLE, speed_next = 0, speed_pre_left = 0, speed_pre_right = 0;
@@ -295,66 +329,85 @@ void main(void){
   uint32 turn_angle = 0;
   
   init_all();
-  speed_adj(INIT_SPEED);                                    //启动电机
+   speed_adj(INIT_SPEED);                                    //启动电机
   while(1){
     int j = 180;
     img_get(imgbuff, img); 
     turn_err = turn_error(img);
+    out_flag = track_lost(img);
     abs_error = abs(turn_err);
     turn_change = get_P(turn_err);
     
-    //每4次循环调整一次速度
-    if(i == 4){
+    //非差速注释
+    if(i == 2){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小
-      if(abs_error >= 0 && abs_error <2){
+      if(abs_error >= 0 && abs_error < 2){
         speed_left = INIT_SPEED + 500;
         speed_right = INIT_SPEED + 500;
       }
-      else if (abs_error >= 2 && abs_error < 5){
-        speed_left = INIT_SPEED + 500;
-        speed_right = INIT_SPEED + 500;
+      else if (abs_error >= 2 && abs_error < 10){
+//        if(turn_err > 0){
+//          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+//            speed_left = INIT_SPEED;
+//            speed_right = INIT_SPEED - ;
+//          }
+//          else{
+//            speed_left = INIT_SPEED + 100;
+//            speed_right = INIT_SPEED - 2400;
+//          }
+//        }
+//        else{
+//          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+//            speed_left = INIT_SPEED - 2900;
+//            speed_right = INIT_SPEED + 100;
+//          }
+//          else{
+//            speed_left = INIT_SPEED - 2500;
+//            speed_right = INIT_SPEED + 300;
+//          }
+//        }
       }
-      else if (abs_error >= 5 && abs_error < 20){
+      else if(abs_error >= 15 && abs_error < 20){
+        if(turn_err > 0){
+          speed_left = INIT_SPEED;
+          speed_right = INIT_SPEED - 2500;
+        }
+        else{
+          speed_left = INIT_SPEED - 2600;
+          speed_right = INIT_SPEED - 100;
+        }
+      }
+      else if(abs_error >= 20 && abs_error < 25){
         if(turn_err > 0){
           if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
-            speed_left = INIT_SPEED + 100;
-            speed_right = INIT_SPEED - 2900;
+            speed_left = INIT_SPEED;
+            speed_right = INIT_SPEED - 3000;
           }
           else{
             speed_left = INIT_SPEED + 100;
-            speed_right = INIT_SPEED - 2400;
+            speed_right = INIT_SPEED - 2900;
           }
         }
         else{
           if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 3000;
+            speed_right = INIT_SPEED;
+          }
+          else{
             speed_left = INIT_SPEED - 2900;
             speed_right = INIT_SPEED + 100;
           }
-          else{
-            speed_left = INIT_SPEED - 2500;
-            speed_right = INIT_SPEED + 300;
-          }
         }
       }
-      else if(abs_error >= 20 && abs_error < 30){
-        if(turn_err > 0){
-          speed_left = INIT_SPEED + 300;
-          speed_right = INIT_SPEED - 2900;
-        }
-        else{
-          speed_left = INIT_SPEED - 2900;
-          speed_right = INIT_SPEED + 300;
-        }
-      }
-      else if(abs_error >= 30 && abs_error < 40){
+      else if(abs_error >= 25 && abs_error < 30){
         if(turn_err > 0){
           if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
-            speed_left = INIT_SPEED + 100;
-            speed_right = INIT_SPEED - 2900;
+            speed_left = INIT_SPEED - 200;
+            speed_right = INIT_SPEED - 3000;
           }
           else{
-            speed_left = INIT_SPEED + 200;
-            speed_right = INIT_SPEED - 2700;
+            speed_left = INIT_SPEED + 300;
+            speed_right = INIT_SPEED - 3000;
           }
         }
         else{
@@ -363,24 +416,97 @@ void main(void){
             speed_right = INIT_SPEED + 200;
           }
           else{
-            speed_left = INIT_SPEED - 2900;
-            speed_right = INIT_SPEED + 200;
+            speed_left = INIT_SPEED - 3000;
+            speed_right = INIT_SPEED + 300;
           }
         }
       }
-      else{
-        speed_left = INIT_SPEED;
-        speed_right = INIT_SPEED;
+      else if(abs_error >= 30 && abs_error < 35){
+        if(turn_err > 0){
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 300;
+            speed_right = INIT_SPEED - 2000;
+          }
+          else{
+            //500
+            speed_left = INIT_SPEED + 700;
+            speed_right = INIT_SPEED - 2000;
+          }
+        }
+        else{
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED - 300;
+          }
+          else{
+            //500
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED + 700;
+          }
+        }
       }
-      
+      else if(abs_error >= 35 && abs_error < 40){
+        if(turn_err > 0){
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 500;
+            speed_right = INIT_SPEED - 2900;
+          }
+          else{
+            //600
+            speed_left = INIT_SPEED + 800;
+            speed_right = INIT_SPEED - 2000;
+          }
+        }
+        else{
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED - 500;
+          }
+          else{
+            //700
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED + 800;
+          }
+        }
+      }
+      else if(abs_error >= 40){
+        if(turn_err > 0){
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 400;
+            speed_right = INIT_SPEED - 2000;
+          }
+          else{
+            //700
+            speed_left = INIT_SPEED + 900;
+            speed_right = INIT_SPEED - 2000;
+          }
+        }
+        else{
+          if(speed_pre_left >= 3300 || speed_pre_right >= 3300){
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED - 400;
+          }
+          else{
+            speed_left = INIT_SPEED - 2000;
+            speed_right = INIT_SPEED + 900;
+          }
+        }
+      }
       
       i = 0;
     }
+    
+    if(speed_left < 0)
+      speed_left = 0;
+    if(speed_right < 0)
+      speed_right = 0;
+
     speed_pre_left = speed_left;
     speed_pre_right = speed_right;
-    
+
+  
     if(island_flag == 1 && j > 1){
-      turn_change = -100;
+      turn_change = 0;
       speed_left = 1050;
       speed_right = 1050;
       j --;
@@ -393,27 +519,19 @@ void main(void){
         DELAY_MS(80);
       }
     }
-    //调整速度并转弯
+   
     speed_adj_res(speed_left, speed_right);
     
     if(turn_flag == 0)
       turn(turn_change, INIT_ANGLE);
+    
     //延迟再次循环
     if(enter_flag == 1)
-      DELAY_US(300);
+      DELAY_US(400);
     if(island_flag == 0)
       DELAY_US(80);
     i += 1;
-  
-  enter_flag1 = 0;
-  enter_flag2 = 0;
-  enter_flag = 0;
-  exit_flag1 = 0;
-  exit_flag = 0;
-  wall_flag = 1;
-  stop_flag = 0;
-  turn_flag = 0;
-  island_flag = 0;
-  decelerate_flag = 0;
+    
+    clear_all();
+    }
   }
-}
