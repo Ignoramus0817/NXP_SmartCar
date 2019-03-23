@@ -64,7 +64,7 @@ void init_all()
 {
   //电机
   //CH1-L1X CH3-L2 CH0-R1X CH2-R2 
-  ftm_pwm_init(FTM0, FTM_CH3, 10*1000, INIT_SPEED);
+  ftm_pwm_init(FTM0, FTM_CH1, 10*1000, INIT_SPEED);
   ftm_pwm_init(FTM0, FTM_CH2, 10*1000, INIT_SPEED);
   
   //舵机
@@ -93,13 +93,13 @@ void clear_all(){
 //速度调整，输入为新速度
 void speed_adj(uint32 speed_next)
 {
-    ftm_pwm_duty(FTM0, FTM_CH3, speed_next);
+    ftm_pwm_duty(FTM0, FTM_CH1, speed_next);
     ftm_pwm_duty(FTM0, FTM_CH2, speed_next);
 }
 
 //差速版调整速度
 void speed_adj_res(uint32 speed_left, uint32 speed_right){
-    ftm_pwm_duty(FTM0, FTM_CH3, speed_left);
+    ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
     ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
 }
 
@@ -132,15 +132,22 @@ int turn_error(uint8 img[][CAMERA_W])
       stop_flag += 1;
   }
   
-  int cross_flag = 0;
+  int cross_flag_u = 0;
   //十字路口问题
+  //上20-21
   for(int i = 20; i <= 21; i++){
     if(img[i][0] == 0x00 && img[i][CAMERA_W-1] == 0x00 && img[i][x_base] == 0xFF)
-      cross_flag += 0;
+      cross_flag_u == 1;
   }
-  if(img[26][0] == 0xFF && img[26][CAMERA_W-1] == 0xFF)
-    cross_flag += 1;
-  if(cross_flag == 2)
+  //下33,37
+  int cross_flag_l1 = 1, cross_flag_l2 = 1;
+  for(int i = 0; i <= CAMERA_W; i++){
+    if(img[33][i] == 0x00)
+      cross_flag_l1 = 0;
+    if(img[37][i] == 0x00)
+      cross_flag_l2 = 0;
+  }
+  if( cross_flag_u == 1 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) )
     y_ref = 20;
   
   
@@ -229,26 +236,26 @@ int turn_error(uint8 img[][CAMERA_W])
     //左右初始像素均为白
     if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
       int i = 0, j = 0;
-      if(img[y_ref][x_base] == 0x00)
+      if(img[30][x_base] == 0x00)
         y_ref = 58;
-      for(i; i < 80; i++){
+      for(i; i < 79; i++){
         if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
           break;
       }
-      for(j; j <80; j++){
+      for(j; j < 79; j++){
         if(img[y_ref][CAMERA_W-j] == 0xFF && img[y_ref][CAMERA_W-j-1] == 0x00)
           break;
       }
       if(i - j > 0){
-        for(int k = 0; k < 80; k++){
+        for(int k = 0; k < 79; k++){
           if(img[y_ref][k] == 0xFF && img[y_ref][k+1] == 0x00)
-            x_comp = k / 2;
+            x_comp = (k - 30) / 2;
         }
       }
       else if (i - j < 0){
-        for(int k = 0; k < 80; k++){
+        for(int k = 0; k < 79; k++){
           if(img[y_ref][CAMERA_W-k] == 0xFF && img[y_ref][CAMERA_W-k-1] == 0x00)
-            x_comp = (k + 79) / 2;
+            x_comp = (k + 79 + 30) / 2;
         }
       }
       else
@@ -299,17 +306,17 @@ int get_P(int error)
   else if(ref >= 5 && ref < 7)
     P = 4;
   else if(ref >= 7 && ref < 9)
-    P = 8;
+    P = 12;
   else if(ref >= 9 && ref < 11)
-    P = 9;
+    P = 15;
   else if(ref >= 11 && ref < 13)
-    P = 10;
+    P = 17;
   else if(ref >= 13 && ref < 15)
-    P = 11;
-  else if(ref >= 15 && ref < 25)
     P = 19;
-  else if(ref >= 25)
+  else if(ref >= 15 && ref < 25)
     P = 20;
+  else if(ref >= 25)
+    P = 21;
   output = error * P;
   return output;
 }
@@ -372,7 +379,7 @@ void main(void){
       i = 0;
     }
     
-    int speed_varA = 100, speed_varB = 30;
+    int speed_varA = 130, speed_varB = 20;
     if(turn_err > 0){
       speed_left = INIT_SPEED + speed_diff * speed_varB;
       speed_right = INIT_SPEED - speed_diff * speed_varA;
@@ -413,9 +420,9 @@ void main(void){
     
     //延迟再次循环
     if(enter_flag == 1)
-      DELAY_US(400);
+      DELAY_US(380);
     if(island_flag == 0)
-      DELAY_US(80);
+      DELAY_US(60);
     i += 1;
     
     clear_all();

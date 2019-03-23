@@ -17,7 +17,7 @@ void  img_get(uint8 *imgbuff, uint8 img[][CAMERA_W])
         /***  强调一点：所谓的灰度模式，实际上只有2个像素值，即已经二值化好的灰度模式。  ***/
 
         //发送图像到上位机
-//        vcan_sendimg(imgbuff, CAMERA_SIZE);                  //发送到上位机
+        vcan_sendimg(imgbuff, CAMERA_SIZE);                  //发送到上位机
         img_extract(img, imgbuff,CAMERA_SIZE);                  //解压图像
 //        vcan_sendimg(img, CAMERA_W * CAMERA_H);                  //发送到上位机
 }
