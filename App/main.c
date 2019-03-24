@@ -36,6 +36,7 @@ uint8 img[CAMERA_H][CAMERA_W];
 //舵机右左最大值，用作输入限制（占空比，单位万分之）
 uint32 ANGLE_UPPER_LIMIT = 840;
 uint32 ANGLE_LOWER_LIMIT = 430;
+uint32 SPEED_UPPER_LIMIT = 3800;
 
 //速度及舵机角度初始值（占空比，单位万分之）
 //450（左）- 850 （右）
@@ -44,7 +45,7 @@ uint32 INIT_SPEED = 3000;
 
 int enter_flag1 = 0, enter_flag2 = 0, enter_flag = 0, exit_flag1 = 0, exit_flag = 0;
 int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;
-int out_flag = 0;
+int out_flag = 0, enable_flag = 1;
 
 //初始化
 void init_all();
@@ -70,10 +71,36 @@ void init_all()
   //舵机
   ftm_pwm_init(FTM1, FTM_CH0, 100, INIT_ANGLE); 
   
+  //LED(24/19/6/9)
+  gpio_init(PTA19, GPO, 1);
+  gpio_init(PTA9, GPO, 1);
+  
+//  //编码器
+//  ftm_input_init(FTM2, FTM_CH0, FTM_Falling, FTM_PS_1);
+  
   //摄像头
   uart_init(UART5, 9600);
-  camera_init(imgbuff);     
+  camera_init(imgbuff); 
 }
+
+////编码器测试
+//void PIT0_IRQHandler(void){
+//  int16 val;
+//  val = ftm_input_get(FTM2, FTM_CH0);
+//  ftm_input_clean(FTM2);
+//  
+//  printf("val: %d\n",val);
+//  PIT_Flag_Clear(PIT0);
+//}
+//
+//void main(void){
+//  init_all();
+//  pit_init_ms(PIT0, 500);
+//  set_vector_handler(PIT0_VECTORn, PIT0_IRQHandler);
+//  
+//  enable_irq(PIT0_IRQn);
+//  while(1);
+//}
 
 //清除所有flag
 void clear_all(){
@@ -85,7 +112,7 @@ void clear_all(){
   wall_flag = 1;
   stop_flag = 0;
   turn_flag = 0;
-  island_flag = 0;
+//  island_flag = 0;
   decelerate_flag = 0;
   out_flag = 0;
 }
@@ -99,8 +126,12 @@ void speed_adj(uint32 speed_next)
 
 //差速版调整速度
 void speed_adj_res(uint32 speed_left, uint32 speed_right){
-    ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
-    ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
+  if(speed_left >= SPEED_UPPER_LIMIT)
+    speed_left = INIT_SPEED;;
+  if(speed_right >= SPEED_UPPER_LIMIT)
+    speed_right = INIT_SPEED;
+  ftm_pwm_duty(FTM0, FTM_CH1, speed_left);
+  ftm_pwm_duty(FTM0, FTM_CH2, speed_right);
 }
 
 //转向，参数1为角度变量，参数2为原角度
@@ -150,66 +181,86 @@ int turn_error(uint8 img[][CAMERA_W])
   if( cross_flag_u == 1 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) )
     y_ref = 20;
   
+  // y_ref调整
+  int count = 0;
+  for(int m; m < CAMERA_W - 1; m ++){
+    if( (img[y_ref][m] == 0x00 && img[y_ref][m+1] == 0xFF) ||
+        (img[y_ref][m] == 0xFF && img[y_ref][m+1] == 0x00) )
+      count += 1;
+  }
+  if(count >= 3)
+    y_ref == 50;
   
-  //入环岛
-  for(y_upper = 19; y_upper < 21; y_upper ++){
-    if(img[y_upper][0] == 0x00 && img[y_upper][CAMERA_W-1] == 0xFF)
-      enter_flag1 += 1;
-  }
-  for(y_lower = 40; y_lower < 44; y_lower ++){
-    if(img[y_lower][0] == 0xFF && img[y_lower][CAMERA_W-1] == 0x00)
-      enter_flag2 = 1;
-  }
-  if(enter_flag1 == 2 && enter_flag2 == 1){
-    island_flag = 1;
-    for(int i = 15; i < 60; i++){
-      if(img[i][39] == 0x00)
-        island_flag = 0;
+  if(enable_flag == 1){
+    //入环岛
+    for(y_upper = 19; y_upper < 21; y_upper ++){
+      if(img[y_upper][0] == 0x00 && img[y_upper][CAMERA_W-1] == 0xFF)
+        enter_flag1 += 1;
     }
-    if(img[19][59] == 0x00 && img[19][69] == 0x00)
-      island_flag = 0;
-    if(img[30][0] == 0xFF)
-      island_flag = 0;
-
-    //存放黑色区域长度
-    int length[23], max_length = 0, i, j;
-    for(int k = 0; k < 23; k++)
-      length[k] = 0;
-    //扫描20-42行的右侧区域，找到每一列黑色区域的长度，存在length中
-    for(i = 0; i < 23; i++){
-      for(j = 79; j > 0; j--){
-        if(img[i][79] == 0xFF)
-          break;
-        if(img[i + 20][j] == 0x00 && img[i + 20][j - 1] == 0xFF)
-          break;
+    for(y_lower = 40; y_lower < 44; y_lower ++){
+      if(img[y_lower][0] == 0xFF && img[y_lower][CAMERA_W-1] == 0x00)
+        enter_flag2 = 1;
+    }
+    if(enter_flag1 == 2 && enter_flag2 == 1){
+      island_flag = 1;
+      for(int i = 15; i < 60; i++){
+        if(img[i][39] == 0x00)
+          island_flag = 0;
       }
-      int temp = 0;
-      if(j > 39)
-        temp = CAMERA_W - j - 1;
-      length[i] = temp;
-      temp = 0;
-    }
-    
-    
-    //找最长的黑色长度
-    max_length = length[0];
-    for(int k = 0; k < 22;k ++){
-      if(max_length < length[k+1])
-        max_length = length[k+1];
-    }
-    
-    
-    //根据黑色区域的长度来判断是否应该进入环岛
-    if(max_length <= 20 && max_length >= 5)
-      turn_flag = 0;
-    else if(max_length <= 5 && max_length > 0)
-      turn_flag = 1;
-
-    if(island_flag == 1 && turn_flag == 1){
-      enter_flag = 1;
-      exit_flag = 0;
+      if(img[19][59] == 0x00 && img[19][69] == 0x00)
+        island_flag = 0;
+      if(img[30][0] == 0xFF)
+        island_flag = 0;
+   
+      //
+      
+      if(island_flag == 1)
+        enable_flag = 0;
     }
   }
+  
+  //存放黑色区域长度
+  int length[23], max_length = 0, i, j;
+  for(int k = 0; k < 23; k++)
+    length[k] = 0;
+  //扫描20-42行的右侧区域，找到每一列黑色区域的长度，存在length中
+  for(i = 0; i < 23; i++){
+    for(j = 79; j > 0; j--){
+      if(img[i][79] == 0xFF)
+        break;
+      if(img[i + 20][j] == 0x00 && img[i + 20][j - 1] == 0xFF)
+        break;
+    }
+    int temp = 0;
+    if(j > 39)
+      temp = CAMERA_W - j - 1;
+    length[i] = temp;
+    temp = 0;
+  }
+  
+  
+  //找最长的黑色长度
+  max_length = length[0];
+  for(int k = 0; k < 22;k ++){
+    if(max_length < length[k+1])
+      max_length = length[k+1];
+  }
+  
+  
+  //根据黑色区域的长度来判断是否应该进入环岛
+  if(max_length <= 20 && max_length >= 5)
+    turn_flag = 0;
+  else if(max_length <= 5 && max_length > 0)
+    turn_flag = 1;
+  
+  if(island_flag == 1 && turn_flag == 1){
+    enter_flag = 1;
+    exit_flag = 0;
+  }
+  
+  if(island_flag == 1 && turn_flag == 1)
+    y_ref = 19;
+  
    //出环岛
   y_upper = 16;
   y_lower = 27;
@@ -219,14 +270,15 @@ int turn_error(uint8 img[][CAMERA_W])
   }
   if(exit_flag1 >= 70){
     enter_flag = 0;
-    exit_flag = 1;
+    enable_flag = 1;
+//    exit_flag = 1;
 //    island_flag3 = 0;
   }
   //旧转向算法 
   if(enter_flag == 1 && wall_flag == 0){
     for(int i = 0; i < 80; i++){
       if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
-        x_comp = (i + 100) / 2;
+        x_comp = (i + 79 - 20) / 2;
     }
   }
   else if(exit_flag == 1){
@@ -236,8 +288,6 @@ int turn_error(uint8 img[][CAMERA_W])
     //左右初始像素均为白
     if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
       int i = 0, j = 0;
-      if(img[30][x_base] == 0x00)
-        y_ref = 58;
       for(i; i < 79; i++){
         if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
           break;
@@ -302,21 +352,21 @@ int get_P(int error)
   if(ref >= 0 && ref < 2)
     P = 0;
   else if(ref >= 2 && ref < 5)
-    P = 3;
+    P = 1;
   else if(ref >= 5 && ref < 7)
-    P = 4;
+    P = 3;
   else if(ref >= 7 && ref < 9)
-    P = 12;
+    P = 10;
   else if(ref >= 9 && ref < 11)
-    P = 15;
-  else if(ref >= 11 && ref < 13)
-    P = 17;
-  else if(ref >= 13 && ref < 15)
     P = 19;
-  else if(ref >= 15 && ref < 25)
-    P = 20;
-  else if(ref >= 25)
+  else if(ref >= 11 && ref < 13)
     P = 21;
+  else if(ref >= 13 && ref < 15)
+    P = 23;
+  else if(ref >= 15 && ref < 25)
+    P = 25;
+  else if(ref >= 25)
+    P = 27;
   output = error * P;
   return output;
 }
@@ -355,7 +405,7 @@ void main(void){
     abs_error = abs(turn_err);
     turn_change = get_P(turn_err);
     
-    int speed_diff = 0;
+    int speed_diff_A = 0, speed_diff_B = 0;
     //非差速注释
     if(i == 2){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小
@@ -363,30 +413,61 @@ void main(void){
         speed_left = INIT_SPEED + 500;
         speed_right = INIT_SPEED + 500;
       }
-      else if(abs_error >= 15 && abs_error < 20)
-        speed_diff = 17;
-      else if(abs_error >= 20 && abs_error < 25)
-        speed_diff = 18;
-      else if(abs_error >= 25 && abs_error < 30)
-        speed_diff = 19;
-      else if(abs_error >= 30 && abs_error < 35)
-        speed_diff = 20;
-      else if(abs_error >= 35 && abs_error < 40)
-        speed_diff = 21;
-      else if(abs_error >= 40)
-        speed_diff = 22;
-      
+      else if(abs_error >= 2 && abs_error < 5){
+        speed_diff_A = 0;
+        speed_diff_B = 0;
+      }
+      else if(abs_error >= 5 && abs_error < 7){
+        speed_diff_A = 0;
+        speed_diff_B = 0;
+      }
+      else if(abs_error >= 7 && abs_error < 10){
+        speed_diff_A = 15;
+        speed_diff_B = 2;
+      }
+      else if(abs_error >= 10 && abs_error < 15){
+        speed_diff_A = 19;
+        speed_diff_B = 4;
+      }
+      else if(abs_error >= 15 && abs_error < 20){
+        speed_diff_A = 20;
+        speed_diff_B = 20;
+      }
+      else if(abs_error >= 20 && abs_error < 25){
+        speed_diff_A = 21;
+        speed_diff_B = 50;
+      }
+      else if(abs_error >= 25 && abs_error < 30){
+        speed_diff_A = 22;
+        speed_diff_B = 70;
+      }
+      else if(abs_error >= 30 && abs_error < 35){
+        speed_diff_A = 22;
+        speed_diff_B = 90;
+      }
+      else if(abs_error >= 35){
+        speed_diff_A = 22;
+        speed_diff_B = 100;
+      }
       i = 0;
     }
     
-    int speed_varA = 130, speed_varB = 20;
-    if(turn_err > 0){
-      speed_left = INIT_SPEED + speed_diff * speed_varB;
-      speed_right = INIT_SPEED - speed_diff * speed_varA;
+    int speed_varA = 0, speed_varB = 0;
+    if(speed_pre_left >= 3500 || speed_pre_right >= 3500){
+      speed_varA = 150;
+      speed_varB = -10;
     }
     else{
-      speed_left = INIT_SPEED - speed_diff * speed_varA;
-      speed_right = INIT_SPEED + speed_diff * speed_varB;
+      speed_varA = 135;
+      speed_varB = 10;
+    }
+    if(turn_err > 0){
+      speed_left = INIT_SPEED + speed_diff_B * speed_varB;
+      speed_right = INIT_SPEED - speed_diff_A * speed_varA;
+    }
+    else{
+      speed_left = INIT_SPEED - speed_diff_A * speed_varA;
+      speed_right = INIT_SPEED + speed_diff_B * speed_varB;
     }
     
     if(speed_left < 0)
@@ -398,16 +479,23 @@ void main(void){
     speed_pre_right = speed_right;
 
   
-    if(island_flag == 1 && j > 1){
-      turn_change = 0;
-      speed_left = 1050;
-      speed_right = 1050;
-      j --;
+//    if(island_flag == 1 && j > 1){
+//      turn_change = 0;
+//      speed_left = 1050;
+//      speed_right = 1050;
+//      j --;
+//    }
+    
+    if(island_flag == 1){
+      gpio_set(PTA9, 0);
+      if(turn_flag == 1){
+        gpio_set(PTA9, 1);
+      }
     }
     
     if(turn_flag == 1 && island_flag == 1){
       for(int i = 0; i < 8; i++){
-        turn_angle += 30;
+        turn_angle += 10;
         turn(turn_angle, INIT_ANGLE);
         DELAY_MS(80);
       }
@@ -422,7 +510,7 @@ void main(void){
     if(enter_flag == 1)
       DELAY_US(380);
     if(island_flag == 0)
-      DELAY_US(60);
+      DELAY_US(30);
     i += 1;
     
     clear_all();
