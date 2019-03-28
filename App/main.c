@@ -381,7 +381,7 @@ int turn_error(uint8 img[][CAMERA_W])
     }
   }
   
-  return (x_comp - x_base);
+      return (x_comp - x_base);
 }
 
 //计算P值，输入turn_error的返回值，返回turn函数用到的turn_change
@@ -392,23 +392,26 @@ int get_P(int error)
   
   if(ref >= 0 && ref < 2)
     P = 0;
-  else if(ref >= 2 && ref < 5)
+  else if(ref >= 2 && ref < 4)
     P = 1;
-  else if(ref >= 5 && ref < 7)
-    P = 3;
+  else if(ref >= 4 && ref < 7)
+    P = 7;
   else if(ref >= 7 && ref < 10)
-    P = 10;
+    P = 14;
   else if(ref >= 10 && ref < 11)
-    P = 19;
+    P = 20;
   else if(ref >= 11 && ref < 13)
-    P = 21;
-  else if(ref >= 13 && ref < 15)
-    P = 23;
-  else if(ref >= 15 && ref < 25)
     P = 25;
+  else if(ref >= 13 && ref < 15)
+    P = 27;
+  else if(ref >= 15 && ref < 25)
+    P = 26;
   else if(ref >= 25)
     P = 27;
   output = error * P;
+  
+  if(enter_flag == 1)
+    output -= 25;
   return output;
 }
 
@@ -459,23 +462,23 @@ void main(void){
         speed_diff_B = 0;
       }
       else if(abs_error >= 5 && abs_error < 7){
-        speed_diff_A = 0;
-        speed_diff_B = 0;
-      }
-      else if(abs_error >= 7 && abs_error < 10){
-        speed_diff_A = 15;
+        speed_diff_A = 10;
         speed_diff_B = 2;
       }
-      else if(abs_error >= 10 && abs_error < 15){
-        speed_diff_A = 19;
+      else if(abs_error >= 7 && abs_error < 10){
+        speed_diff_A = 16;
         speed_diff_B = 4;
       }
+      else if(abs_error >= 10 && abs_error < 15){
+        speed_diff_A = 21;
+        speed_diff_B = 11;
+      }
       else if(abs_error >= 15 && abs_error < 20){
-        speed_diff_A = 20;
-        speed_diff_B = 20;
+        speed_diff_A = 23;
+        speed_diff_B = 22;
       }
       else if(abs_error >= 20 && abs_error < 25){
-        speed_diff_A = 21;
+        speed_diff_A = 22;
         speed_diff_B = 50;
       }
       else if(abs_error >= 25 && abs_error < 30){
