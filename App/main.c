@@ -24,9 +24,9 @@ uint32 SPEED_UPPER_LIMIT = 4300;
 uint32 INIT_ANGLE = 635;
 uint32 INIT_SPEED = 3500;
 
-int enter_flag1 = 0, enter_flag2 = 0, enter_flag = 0, exit_flag1 = 0, exit_flag2 = 0, exit_flag = 0;
-int wall_flag = 1, stop_flag = 0, island_flag = 0, decelerate_flag = 0, turn_flag = 0;
-int out_flag = 0, enable_island_flag = 1, enable_turn_flag = 1;
+int exit_flag1 = 0, exit_flag2 = 0, exit_flag = 0;
+int wall_flag = 1, island_flag = 0;
+int cross_flag = 0;
 
 //初始化
 void init_all();
@@ -34,7 +34,6 @@ void clear_all();
 
 //方向及速度控制
 void turn(int angle_change, uint32 angle_rate);
-void auto_stop(void);
 
 //track detecting
 int turn_error(uint8 img[][CAMERA_W]);
@@ -92,21 +91,14 @@ void init_all()
 
 //清除所有flag
 void clear_all(){
-  enter_flag1 = 0;
-  enter_flag2 = 0;
-  enter_flag = 0;
   exit_flag1 = 0;
   exit_flag2 = 0;
   exit_flag = 0;
+  cross_flag = 0;
   wall_flag = 1;
-  stop_flag = 0;
-//  turn_flag = 0;
-//  island_flag = 0;
-  decelerate_flag = 0;
-  out_flag = 0;
 }
 
-//差速版调整速度
+//调整速度
 void speed_adj_res(uint32 speed_left, uint32 speed_right){
   if(speed_left >= SPEED_UPPER_LIMIT)
     speed_left = INIT_SPEED;;
@@ -134,19 +126,15 @@ int turn_error(uint8 img[][CAMERA_W])
 {
   //图像中点设为第30行第39列，x_comp用于储存计算的赛道中线
   int x_base = 39, y_ref = 35, x_comp;
-  //y_upper = 19-21, y_lower = 40-42
-  int y_upper, y_lower;
   
   //判断是否有墙
   for(int i = 0;i < CAMERA_W; i++){
     if(img[0][i] == 0x00)
       wall_flag = 0;
-    if(img[2][i] == 0x00 && img[3][i] == 0x00)
-      stop_flag += 1;
   }
   
-  int cross_flag_u = 0;
   //十字路口问题
+  int cross_flag_u = 0;
   //上20-21
   for(int i = 20; i <= 21; i++){
     if(img[i][0] == 0x00 && img[i][CAMERA_W-1] == 0x00 && img[i][x_base] == 0xFF)
@@ -160,9 +148,10 @@ int turn_error(uint8 img[][CAMERA_W])
     if(img[37][i] == 0x00)
       cross_flag_l2 = 0;
   }
-  if( cross_flag_u == 1 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) )
+  if( cross_flag_u == 1 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) ){
     y_ref = 20;
-  
+    cross_flag = 1;
+  }
   // y_ref调整
   int count = 0;
   for(int m = 0; m < CAMERA_W - 1; m ++){
@@ -173,120 +162,50 @@ int turn_error(uint8 img[][CAMERA_W])
   if(count >= 3)
     y_ref = 50;
   
-  if(enable_island_flag == 1){
-    //入环岛
-    for(y_upper = 19; y_upper < 21; y_upper ++){
-      if(img[y_upper][0] == 0x00 && img[y_upper][CAMERA_W-1] == 0xFF)
-        enter_flag1 += 1;
-    }
-    for(y_lower = 40; y_lower < 44; y_lower ++){
-      if(img[y_lower][0] == 0xFF && img[y_lower][CAMERA_W-1] == 0x00)
-        enter_flag2 = 1;
-    }
-    if(enter_flag1 == 2 && enter_flag2 == 1){
-      island_flag = 1;
-      for(int i = 13; i < 60; i++){
-        if(img[i][39] == 0x00)
-          island_flag = 0;
+  //入环岛 
+  if(cross_flag == 0){
+    //l25, diff < 5 
+    //right_start为右侧起点（行数）
+    int right_start = 0, height_bound = 35;
+    for(int i = 0; i < height_bound; i++){
+      if(img[i][79] == 0x00 && img[i+1][79] == 0xFF){
+        right_start = i;
+        break;
       }
-      if(img[19][59] == 0x00 && img[19][69] == 0x00)
-        island_flag = 0;
-      if(img[30][0] == 0xFF)
-        island_flag = 0;
-      
-      //l25, diff < 5 
-      //right_start为右侧起点（行数）
-      int right_start = 0;
-      for(int i = 0; i < 19; i++){
-        if(img[19 - i][79] == 0x00){
-          right_start = 19 - i;
-          break;
-        }
-      }
-      //left_end为左侧中点（行数）
-      int left_end = right_start;
-      for(int i = 0;i < 79 - 25; i ++){
-        if(img[left_end][79 - i] == 0xFF){
-          for(int j = 0; j < left_end; j++){
-            if(img[left_end - j][79 - i] == 0x00){
-              left_end = left_end - j;
-              break;
+    }
+    //left_end为左侧终点（行数）
+    int left_end = right_start, right_secondary = 0;
+    for(int i = 0;i < 79 - 25; i ++){
+      if(img[left_end][79 - i] == 0xFF){
+        for(int j = 0; j < left_end; j++){
+          if(img[left_end - j][79 - i] == 0x00){
+            left_end = left_end - j;
+            break;
+          }
+          else{
+            if(img[left_end - j][79 - i + 1] == 0xFF){
+              island_flag = 0;
+              goto position1;
             }
           }
         }
       }
-      if(right_start - left_end <= 5)
-        island_flag = 0;
-      
-      if(island_flag == 1)
-        enable_island_flag = 0;
     }
-  }
-  
-  if(enable_turn_flag == 1){  
-    //存放黑色区域长度
-    int length[40], max_length = 0, i, j;
-    for(int k = 0; k < 40; k++)
-      length[k] = 0;
-    //扫描20-59行的右侧区域，找到每一列黑色区域的长度，存在length中
-    for(i = 0; i < 40; i++){
-      for(j = 79; j > 0; j--){
-        if(img[i][79] == 0xFF)
-          break;
-        if(img[i + 20][j] == 0x00 && img[i + 20][j - 1] == 0xFF)
-          break;
-      }
-      int temp = 0;
-      if(j > 39)
-        temp = CAMERA_W - j - 1;
-      length[i] = temp;
-      temp = 0;
-    }
-    
-    
-    //找最长的黑色长度
-    max_length = length[0];
-    for(int k = 0; k < 29;k ++){
-      if(max_length < length[k+1])
-        max_length = length[k+1];
-    }
-    
-    
-    //根据黑色区域的长度来判断是否应该进入环岛
-    if(max_length <= 20 && max_length >= 5)
-      turn_flag = 0;
-    else if(max_length <= 5 && max_length > 0)
-      turn_flag = 1;
-    
-    int count_L = 0, count_R = 0;
-    for(int i = 10; i < 25; i++){
-      if( (img[i][50] == 0x00 && img[i+1][50] == 0xFF) ||
-         (img[i][50] == 0xFF && img[i+1][50] == 0x00) )
-        count_L ++;
-      if( (img[i][60] == 0x00 && img[i+1][60] == 0xFF) ||
-         (img[i][60] == 0xFF && img[i+1][60] == 0x00) )
-        count_R ++;
-    }
-    if(count_L >= 3 || count_R >= 3)
-      turn_flag = 0;
-    
-    if(island_flag == 1 && turn_flag == 1){
-      enter_flag = 1;
+     
+    if(right_start - left_end <= 5)
+      island_flag = 0;
+    else if(right_start - left_end <= 30){
+      island_flag = 1;
       exit_flag = 0;
     }
-    
-    if(enter_flag == 1)
-      enable_turn_flag = 0;
   }
-  
-  if(island_flag == 1 && turn_flag == 1){
-    enter_flag = 1;
-    exit_flag = 0;
-  }
+  else
+    island_flag = 0;
   
   //出环岛
   //y_upper = 15 - 27;
   //y_lower = 30 - 59;
+position1:
   for(int i = 15; i < 27; i++){
     int count = 0;
     for(int j = 0; j < CAMERA_W; j++){
@@ -294,7 +213,7 @@ int turn_error(uint8 img[][CAMERA_W])
         count++;
     }
     if(count >= 75)
-       exit_flag1 += 1;
+      exit_flag1 += 1;
   }
   for(int i = 30; i < 60; i++){
     int count = 0;
@@ -307,21 +226,13 @@ int turn_error(uint8 img[][CAMERA_W])
   }
   
   if(exit_flag1 >= 6 && exit_flag2 >= 27){
-    enter_flag = 0;
-    turn_flag = 0;
     island_flag = 0;
     exit_flag = 1;
   }
-  if(island_flag == 1 && turn_flag == 1)
-    y_ref = 19;
   
   //旧转向算法 
-  if(enter_flag == 1 && wall_flag == 0){
-    for(int i = 0; i < 80; i++){
-      if(img[y_ref][i] == 0xFF && img[y_ref][i-1] == 0x00)
-        x_comp = (i + 79 - 1) / 2;
-    }
-  }
+  if(island_flag == 1)
+    x_comp = 39 + 79 / 2;
   else if(exit_flag == 1){
     x_comp = 80;
   }
@@ -329,11 +240,11 @@ int turn_error(uint8 img[][CAMERA_W])
     //左右初始像素均为白
     if(img[y_ref][0] == 0xFF && img[y_ref][CAMERA_W-1] == 0xFF){
       int i = 0, j = 0;
-      for(i; i < 79; i++){
+      for(; i < 79; i++){
         if(img[y_ref][i] == 0xFF && img[y_ref][i+1] == 0x00)
           break;
       }
-      for(j; j < 79; j++){
+      for(; j < 79; j++){
         if(img[y_ref][CAMERA_W-j] == 0xFF && img[y_ref][CAMERA_W-j-1] == 0x00)
           break;
       }
@@ -381,7 +292,7 @@ int turn_error(uint8 img[][CAMERA_W])
     }
   }
   
-      return (x_comp - x_base);
+  return (x_comp - x_base);
 }
 
 //计算P值，输入turn_error的返回值，返回turn函数用到的turn_change
@@ -410,42 +321,21 @@ int get_P(int error)
     P = 27;
   output = error * P;
   
-  if(enter_flag == 1)
-    output -= 25;
   return output;
 }
 
-//自动停车
-int track_lost(uint8 img[][CAMERA_W]){
-  int count = 0, line_count = 0;
-  for(int i = 0; i < 60; i++){
-    for(int j = 0; j < 80; j++){
-      if(img[i][j] == 0x00)
-        count += 1;
-    }
-    if(count >= 70)
-      line_count += 1;
-    count = 0;
-  }
-  if(line_count >= 50)
-    return 1;
-  else
-    return 0;
-}
-
 void main(void){
-  int turn_err, turn_change, abs_error, i = 0;
+  int i = 0, j = 10;
+  int turn_err, turn_change, abs_error;
   uint32 speed_pre_left = 0, speed_pre_right = 0;
   uint32 speed_left = INIT_SPEED, speed_right = INIT_SPEED;
-  uint32 turn_angle = 0;
+//  uint32 turn_angle = 0;
   
   init_all();
   speed_adj_res(INIT_SPEED, INIT_SPEED);                                    //启动电机
   while(1){
-    int j = 180;
     img_get(imgbuff, img); 
     turn_err = turn_error(img);
-    out_flag = track_lost(img);
     abs_error = abs(turn_err);
     turn_change = get_P(turn_err);
     
@@ -523,35 +413,24 @@ void main(void){
     speed_pre_right = speed_right;
     
     
-    //    if(island_flag == 1 && j > 1){
-    //      turn_change = 0;
-    //      speed_left = 1050;
-    //      speed_right = 1050;
-    //      j --;
-    //    }
+    if(island_flag == 1 && j > 0){
+      speed_pre_left = 2000;
+      speed_pre_right = 2000;
+      j --;
+    }
     
     if(island_flag == 1)
-      gpio_set(PTA9, 0);
-    if(enter_flag == 1){
       gpio_set(PTA19, 0);
-//      for(int i = 0; i < 3; i++){
-//        turn_angle += 10;
-//        turn(turn_angle, INIT_ANGLE);
-//      }
-    }
     else
       gpio_set(PTA19, 1);
-    if(exit_flag == 1)
+    if(cross_flag == 1)
+      gpio_set(PTA9, 0);
+    else
       gpio_set(PTA9, 1);
     
     speed_adj_res(speed_left, speed_right);
-    
-    //    if(enter_flag == 0)
     turn(turn_change, INIT_ANGLE);
-    
-    //延迟再次循环
-//    if(enter_flag == 1)
-//      DELAY_US(380);
+  
     if(island_flag == 0)
       DELAY_US(30);
     i += 1;
