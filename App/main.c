@@ -25,7 +25,7 @@ uint32 INIT_ANGLE = 635;
 uint32 INIT_SPEED = 3500;
 
 int exit_flag1 = 0, exit_flag2 = 0, exit_flag = 0;
-int wall_flag = 1, island_flag = 0;
+int wall_flag = 1, island_flag = 0, turn_flag = 0;
 int cross_flag = 0;
 
 //初始化
@@ -95,6 +95,7 @@ void clear_all(){
   exit_flag2 = 0;
   exit_flag = 0;
   cross_flag = 0;
+  turn_flag = 0;
   wall_flag = 1;
 }
 
@@ -135,11 +136,11 @@ int turn_error(uint8 img[][CAMERA_W])
   
   //十字路口问题
   int cross_flag_u = 0;
-  //上20-21
-  for(int i = 20; i <= 21; i++){
-    if(img[i][0] == 0x00 && img[i][CAMERA_W-1] == 0x00 && img[i][x_base] == 0xFF)
-      cross_flag_u = 1;
-  }
+  //上22/25
+  if(img[25][0] == 0x00 && img[25][CAMERA_W-1] == 0x00 && img[25][x_base] == 0xFF)
+    cross_flag_u += 1;
+  if(img[22][0] == 0x00 && img[22][CAMERA_W-1] == 0x00 && img[22][x_base] == 0xFF)
+    cross_flag_u += 1;
   //下33,37
   int cross_flag_l1 = 1, cross_flag_l2 = 1;
   for(int i = 0; i <= CAMERA_W; i++){
@@ -148,7 +149,7 @@ int turn_error(uint8 img[][CAMERA_W])
     if(img[37][i] == 0x00)
       cross_flag_l2 = 0;
   }
-  if( cross_flag_u == 1 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) ){
+  if( cross_flag_u == 2 && (cross_flag_l1 == 1 || cross_flag_l2 == 1) ){
     y_ref = 20;
     cross_flag = 1;
   }
@@ -191,16 +192,55 @@ int turn_error(uint8 img[][CAMERA_W])
         }
       }
     }
-     
+
     if(right_start - left_end <= 5)
       island_flag = 0;
-    else if(right_start - left_end <= 30){
+    else if(right_start <= 25){
       island_flag = 1;
       exit_flag = 0;
     }
+    if(img[right_start + 2][60] == 0x00)
+      island_flag = 0;
+    
+    if( !((img[24][0] == 0x00 && img[24][CAMERA_W-1] == 0xFF) && 
+        (img[25][0] == 0x00 && img[25][CAMERA_W-1] == 0xFF)) )
+      island_flag = 0;;
   }
   else
     island_flag = 0;
+  
+  int length[40], max_length = 0, i, j;
+  for(int k = 0; k < 40; k++)
+    length[k] = 0;
+  //扫描20-59行的右侧区域，找到每一列黑色区域的长度，存在length中
+  for(i = 0; i < 40; i++){
+    for(j = 79; j > 0; j--){
+      if(img[i][79] == 0xFF)
+        break;
+      if(img[i + 20][j] == 0x00 && img[i + 20][j - 1] == 0xFF)
+        break;
+    }
+    int temp = 0;
+    if(j > 39)
+      temp = CAMERA_W - j - 1;
+    length[i] = temp;
+    temp = 0;
+  }
+  
+  
+  //找最长的黑色长度
+  max_length = length[0];
+  for(int k = 0; k < 29;k ++){
+    if(max_length < length[k+1])
+      max_length = length[k+1];
+  }
+  
+  
+  //根据黑色区域的长度来判断是否应该进入环岛
+  if(max_length <= 20 && max_length >= 5)
+    turn_flag = 0;
+  else if(max_length <= 5 && max_length >= 0)
+    turn_flag = 1;
   
   //出环岛
   //y_upper = 15 - 27;
@@ -231,7 +271,7 @@ position1:
   }
   
   //旧转向算法 
-  if(island_flag == 1)
+  if(island_flag == 1 && turn_flag == 1)
     x_comp = 39 + 79 / 2;
   else if(exit_flag == 1){
     x_comp = 80;
@@ -325,7 +365,7 @@ int get_P(int error)
 }
 
 void main(void){
-  int i = 0, j = 10;
+  int i = 0, j = 1000;
   int turn_err, turn_change, abs_error;
   uint32 speed_pre_left = 0, speed_pre_right = 0;
   uint32 speed_left = INIT_SPEED, speed_right = INIT_SPEED;
@@ -414,16 +454,18 @@ void main(void){
     
     
     if(island_flag == 1 && j > 0){
-      speed_pre_left = 2000;
-      speed_pre_right = 2000;
+      speed_pre_left = 1600;
+      speed_pre_right = 1600;
       j --;
     }
+    if(island_flag == 0)
+      j = 1000;
     
-    if(island_flag == 1)
+    if(island_flag == 1 && turn_flag == 1)
       gpio_set(PTA19, 0);
     else
       gpio_set(PTA19, 1);
-    if(cross_flag == 1)
+    if(island_flag == 1)
       gpio_set(PTA9, 0);
     else
       gpio_set(PTA9, 1);
