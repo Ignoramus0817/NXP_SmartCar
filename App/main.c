@@ -95,7 +95,7 @@ void PIT0_IRQHandler(void){
     peak_start = 0;
     valley_start = 0;
   }
-  vcan_sendware(send, sizeof(send));
+//  vcan_sendware(send, sizeof(send));
   PIT_Flag_Clear(PIT0);
 }
 
