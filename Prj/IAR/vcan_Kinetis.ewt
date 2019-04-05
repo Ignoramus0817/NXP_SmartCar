@@ -7137,12 +7137,6 @@
         <file>
             <name>$PROJ_DIR$\..\..\App\Inc\PORT_cfg.h</name>
         </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\简单的PID及说明\stdpid.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\简单的PID及说明\stdpid.h</name>
-        </file>
     </group>
     <group>
         <name>Board</name>
