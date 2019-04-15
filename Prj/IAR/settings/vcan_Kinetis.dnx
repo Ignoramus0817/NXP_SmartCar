@@ -12,7 +12,7 @@
         <ByteLimit>50</ByteLimit>
     </Stack>
     <DebugChecksum>
-        <Checksum>654272286</Checksum>
+        <Checksum>1370570517</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -107,7 +107,7 @@
         <MemConfigValue>C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\arm\CONFIG\debugger\NXP\MK60DN512Zxxx10.ddf</MemConfigValue>
     </PlDriver>
     <Jet>
-        <JetConnSerialNo>00083</JetConnSerialNo>
+        <JetConnSerialNo>01436</JetConnSerialNo>
         <JetConnFoundProbes />
         <PrevWtdReset>System</PrevWtdReset>
         <DisableInterrupts>0</DisableInterrupts>
@@ -121,8 +121,8 @@
     <SWOManager>
         <SamplingDivider>8192</SamplingDivider>
         <OverrideClock>0</OverrideClock>
-        <CpuClock>197632</CpuClock>
-        <SwoClock>512</SwoClock>
+        <CpuClock>1</CpuClock>
+        <SwoClock>363522348</SwoClock>
         <DataLogMode>0</DataLogMode>
         <ItmPortsEnabled>63</ItmPortsEnabled>
         <ItmTermIOPorts>1</ItmTermIOPorts>

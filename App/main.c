@@ -15,19 +15,20 @@ uint8 imgbuff[CAMERA_SIZE];
 uint8 img[CAMERA_H][CAMERA_W]; 
 
 //舵机右左最大值，用作输入限制（占空比，单位万分之）
-uint32 ANGLE_UPPER_LIMIT = 840;
-uint32 ANGLE_LOWER_LIMIT = 430;
+uint32 ANGLE_UPPER_LIMIT = 860;
+uint32 ANGLE_LOWER_LIMIT = 410;
 uint32 SPEED_UPPER_LIMIT = 5000;
 
 //速度及舵机角度初始值（占空比，单位万分之）
 //430（左）- 850 （右）
-uint32 INIT_ANGLE = 640;
+uint32 INIT_ANGLE = 637;
 uint32 INIT_SPEED = 3200;
 
 int exit_flag1 = 0, exit_flag2 = 0, exit_flag = 0, enable_flag = 1;
 int wall_flag = 1, island_flag = 0, turn_flag = 0;
 int cross_flag = 0, out_flag = 0, reEnter_flag = 0;
 int peak_counter = 0, valley_counter = 0, peak_start = 0, valley_start = 0;
+int exit_counter = 0;
 
 //初始化
 void init_all();
@@ -139,12 +140,13 @@ void turn(int angle_change, uint32 angle_rate)
   ftm_pwm_duty(FTM1, FTM_CH0, angle);
 }
 
-//int y_ref = 30;
+
 //处理摄像头数据，传入图像数组，返回图像中线和赛道中线的差值，用于计算P值
 int turn_error(uint8 img[][CAMERA_W])
 {
   //图像中点设为第30行第39列，x_comp用于储存计算的赛道中线
-  int x_base = 39, y_ref = 30, x_comp;
+  int x_base = 39, x_comp = 39;
+  int y_ref = 30;
   
   //判断是否有墙
   for(int i = 0;i < CAMERA_W; i++){
@@ -171,6 +173,10 @@ int turn_error(uint8 img[][CAMERA_W])
     y_ref = 17;
     cross_flag = 1;
   }
+  
+  // TODO: cross algorithm reset
+  int ref_reset = 0;
+  
   // y_ref调整
   int count = 0;
   for(int m = 0; m < CAMERA_W - 1; m ++){
@@ -188,13 +194,54 @@ int turn_error(uint8 img[][CAMERA_W])
       goto position1;
     //l25, diff < 5 
     //right_start为右侧起点（行数）
-    int right_start = 0, height_bound = 35;
-    for(int i = 0; i < height_bound; i++){
-      if(img[i][79] == 0x00 && img[i+1][79] == 0xFF){
-        right_start = i;
-        break;
+//    for(int i = 0; i < height_bound; i++){
+//      if(img[i][79] == 0x00 && img[i+1][79] == 0xFF){
+//        right_start = i;
+//        break;
+//      }
+//    }
+    int right_start = 0, left_start = 0;
+    int temp1 = 0, temp2 = 0;
+    if(img[30][CAMERA_W - 1] == 0x00){
+      goto position1;
+    }
+    else{
+      for(int i = 0; i <= 30; i++){
+        if(img[30 - i][CAMERA_W - 1] == 0x00 && img[30 - i + 1][CAMERA_W - 1] == 0xFF){
+          temp1 = 30 - i;
+          break;
+        }
+      }
+      for(int i = 1; i <= temp1; i++){
+        if(img[temp1 - i][CAMERA_W - 1] == 0x00 && img[temp1 - i + 1][CAMERA_W - 1] == 0xFF){
+          temp2 = temp1 - i;
+          break;
+        }
+      }
+      if(temp2 == 0){
+        temp2 = temp1;
+      }
+      right_start = temp2;
+    }
+    
+    //left_start为左侧分界处
+    if(img[30][0] == 0x00){
+      for(int i = 30; i < 60; i++){
+        if(img[i][0] == 0x00 && img[i + 1][0] == 0xFF){
+          left_start = i;
+          break;
+        }
       }
     }
+    else{
+      for(int i = 30; i >= 0; i--){
+        if(img[i][0] == 0x00 && img[i + 1][0] == 0xFF){
+          left_start = i;
+          break;
+        }
+      }
+    }
+    
     //left_end为左侧终点（行数）
     int left_end = right_start;
     for(int i = 0;i < 79 - 25; i ++){
@@ -223,8 +270,22 @@ int turn_error(uint8 img[][CAMERA_W])
     if(img[right_start + 2][60] == 0x00)
       island_flag = 0;
     
+    if( abs(left_start - right_start) <= 3)
+      island_flag = 0;
+    
     if( !((img[24][0] == 0x00 && img[24][CAMERA_W-1] == 0xFF) && 
           (img[25][0] == 0x00 && img[25][CAMERA_W-1] == 0xFF)) )
+      island_flag = 0;
+    
+    //转弯干扰dirty(改进：黑白跳变)
+    int disturb = 0;
+    for(int i = 30; i >= 0; i --){
+      if(img[i][39] == 0x00){
+        disturb = i;
+        break;
+      }
+    }
+    if(disturb >= 12)
       island_flag = 0;
     
     int length[40], max_length = 0, i, j;
@@ -278,13 +339,13 @@ int turn_error(uint8 img[][CAMERA_W])
         break;
       }
     }
-    if(left_bound >= right_bound){
-      upper_bound = right_bound;
-      lower_bound = left_bound;
-    }
-    else{
+    if(left_bound <= right_bound){
       upper_bound = left_bound;
       lower_bound = right_bound;
+    }
+    else{
+      upper_bound = right_bound;
+      lower_bound = left_bound;
     }
     
     if(upper_bound > 18 && upper_bound < 30){   
@@ -310,19 +371,24 @@ int turn_error(uint8 img[][CAMERA_W])
       }
     }
     
-    if(out_flag == 1 && exit_flag1 >= 3 && exit_flag2 == 59 - lower_bound){
+    if(out_flag == 1 && abs(upper_bound - lower_bound) <= 6 && exit_flag1 >= 5 && exit_flag2 == 59 - lower_bound){
       island_flag = 0;
       turn_flag = 0;
       exit_flag = 1;
+      exit_counter = 30; 
       peak_counter = 0;
       valley_counter = 0;
       enable_flag = 0;
       reEnter_flag = 1;
       y_ref = 15;
+      gpio_set(PTA19, 0);
     }
+    else
+      gpio_set(PTA19, 1);
+    printf("L:%d\n", upper_bound - lower_bound);
   }
-  //    printf("%d, %d, %d, \n", island_flag, turn_flag, exit_flag);
-  printf("%d   %d\n",enable_flag, cross_flag);
+//  printf("%d, %d, %d, \n", island_flag, turn_flag, exit_flag);
+//  printf("%d   %d\n",enable_flag, cross_flag);
   
 //  if(img[30][0] == 0x00 && img[30][CAMERA_W] == 0x00)
 //    y_ref = 30;
@@ -344,10 +410,12 @@ int turn_error(uint8 img[][CAMERA_W])
   if(island_flag == 1 && turn_flag == 1){
     x_comp = 39 + 5 + 89 / 2;
     out_flag = 1;
+    reEnter_flag = 0;
 //    printf("1\n");
   }
-  else if(exit_flag == 1){
-    x_comp = 120;
+  else if(exit_counter > 0 || exit_flag == 1){
+    x_comp = 200;
+    exit_counter -= 1;
   }
   else{
     //左右初始像素均为白
@@ -555,10 +623,10 @@ void main(void){
     speed_pre_right = speed_right;
     
     
-    if(exit_flag == 1)
-      gpio_set(PTA19, 0);     
-    else
-      gpio_set(PTA19, 1);
+//    if(exit_flag == 1)
+//      gpio_set(PTA19, 0);     
+//    else
+//      gpio_set(PTA19, 1);
 //    if(island_flag == 1 && turn_flag == 1)
 //      gpio_set(PTA19, 0);
 //    else
