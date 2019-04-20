@@ -110,10 +110,10 @@
         <JetConnSerialNo>00081</JetConnSerialNo>
         <JetConnFoundProbes />
         <PrevWtdReset>System</PrevWtdReset>
+        <OnlineReset>Software</OnlineReset>
         <DisableInterrupts>0</DisableInterrupts>
         <LeaveRunning>0</LeaveRunning>
         <MultiCoreRunAll>0</MultiCoreRunAll>
-        <OnlineReset>Software</OnlineReset>
     </Jet>
     <ArmDriver>
         <EnableCache>1</EnableCache>
@@ -161,13 +161,6 @@
         <EventLSU>0</EventLSU>
         <EventSLEEP>0</EventSLEEP>
     </SWOTraceWindow>
-    <DisassembleMode>
-        <mode>0</mode>
-    </DisassembleMode>
-    <Breakpoints2>
-        <Bp0>_ 0 "EMUL_DATA" "UART_D_REG" 0 0 0 0 4294967295</Bp0>
-        <Count>1</Count>
-    </Breakpoints2>
     <DriverProfiling>
         <Enabled>0</Enabled>
         <Mode>1</Mode>
@@ -190,6 +183,13 @@
         <LogFile>_ ""</LogFile>
         <Category>_ 0</Category>
     </LogFile>
+    <DisassembleMode>
+        <mode>0</mode>
+    </DisassembleMode>
+    <Breakpoints2>
+        <Bp0>_ 0 "EMUL_DATA" "UART_D_REG" 0 0 0 0 4294967295</Bp0>
+        <Count>1</Count>
+    </Breakpoints2>
     <Aliases>
         <A0>_ "D:\IgnorazWork\ICAR\ZWO\App\main.c" ""</A0>
         <A1>_ "D:\IgnorazWork\ICAR\ZWO\Board\src\VCAN_SCCB.c" ""</A1>
