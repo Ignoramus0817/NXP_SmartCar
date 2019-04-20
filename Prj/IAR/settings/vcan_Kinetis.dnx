@@ -12,7 +12,7 @@
         <ByteLimit>50</ByteLimit>
     </Stack>
     <DebugChecksum>
-        <Checksum>1370570517</Checksum>
+        <Checksum>2233603187</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -107,7 +107,7 @@
         <MemConfigValue>C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.1\arm\CONFIG\debugger\NXP\MK60DN512Zxxx10.ddf</MemConfigValue>
     </PlDriver>
     <Jet>
-        <JetConnSerialNo>01436</JetConnSerialNo>
+        <JetConnSerialNo>00081</JetConnSerialNo>
         <JetConnFoundProbes />
         <PrevWtdReset>System</PrevWtdReset>
         <DisableInterrupts>0</DisableInterrupts>
