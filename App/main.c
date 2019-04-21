@@ -613,11 +613,11 @@ int get_PID(int error, int pre_error)
       P = 17;
     
     if( abs(diff) > 0 && abs(diff) <= 1)
-      D = 40;
+      D = 50;
     else if( abs(diff) > 1 && abs(diff) <= 3)
-      D = 40;
-    else if( abs(diff) > 3 && abs(diff) <= 5)
       D = 80;
+    else if( abs(diff) > 3 && abs(diff) <= 5)
+      D = 100;
     else if(abs(diff) > 5)
       D = 100;
   }
@@ -678,6 +678,7 @@ int induc_PID(float err_ratio, float pre_err_ratio){
   return output;
 }
 void main(void){
+  DELAY_MS(2000);
   int i = 0, j = 20;
   int turn_err, turn_change_c, abs_error, pre_turn_err = 0;
   uint32 speed_left = INIT_SPEED, speed_right = INIT_SPEED;
