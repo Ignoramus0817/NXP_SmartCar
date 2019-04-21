@@ -27,7 +27,7 @@ uint32 SPEED_UPPER_LIMIT = 5000;
 //速度及舵机角度初始值（占空比，单位万分之）
 //430（左）- 850 （右）
 uint32 INIT_ANGLE = 637;
-uint32 INIT_SPEED = 4000;
+uint32 INIT_SPEED = 4500;
 
 //摄像头参考线纵坐标
 int Y_REF_STD = 30;
@@ -411,7 +411,7 @@ int turn_error(uint8 img[][CAMERA_W])
     //end of 转入判断条件
     if(island_flag == 1 && turn_flag ==  1){
 //      gpio_set(PTA9, 0);
-      enter_counter = 5;
+      enter_counter = 15;
     }
 //    else
 //      gpio_set(PTA9, 1);
@@ -454,7 +454,7 @@ int turn_error(uint8 img[][CAMERA_W])
       if(count >= 75)
         exit_flag1 += 1;
     }
-    if(lower_bound >= 24 && lower_bound < 30){ 
+    if(lower_bound >= 22 && lower_bound < 30){ 
       for(int i = lower_bound + 1; i < 60; i++){
         int count = 0;
         for(int j = 0; j < CAMERA_W; j++){
@@ -509,15 +509,15 @@ int turn_error(uint8 img[][CAMERA_W])
   //end of 激活环岛判断
   
   //转向算法 
-  if( enter_counter >= 1 && (island_flag == 1 && turn_flag == 1) ){
-    x_comp = 39 + 89 / 2;
+  if(enter_counter >= 1 && (island_flag == 1 && turn_flag == 1) ){
+    x_comp = 39 + 140 + 89 / 2;
     out_flag = 1;
     reEnter_flag = 0;
     enter_counter -= 1;
     //    printf("1\n");
   }
   else if(exit_counter >= 2 || exit_flag == 1){
-    x_comp = 700;
+    x_comp = 600;
     out_flag = 0;
     gpio_set(PTA19, 0);
     exit_counter -= 1;
@@ -613,9 +613,9 @@ int get_PID(int error, int pre_error)
       P = 17;
     
     if( abs(diff) > 0 && abs(diff) <= 1)
-      D = 40;
+      D = 45;
     else if( abs(diff) > 1 && abs(diff) <= 3)
-      D = 40;
+      D = 50;
     else if( abs(diff) > 3 && abs(diff) <= 5)
       D = 80;
     else if(abs(diff) > 5)
@@ -633,7 +633,7 @@ int get_PID(int error, int pre_error)
     else if(ref >= 6 && ref < 8)
       P = 12;
     else if(ref >= 8 && ref < 9)
-      P = 13;
+      P = 14;
     else if(ref >= 9 && ref < 11)
       P = 18;
     else if(ref >= 11 && ref < 13)
@@ -707,32 +707,32 @@ void main(void){
       }
       //speed_p_acc, speed_p_dea分别为加减速p值
       else if(abs_error >= 4 && abs_error < 6){
-        speed_p_dea = (3000 * 0.9) / 4;
-        speed_p_acc = (3000 * 0.1) / 6;
+        speed_p_dea = (4300 * 0.93) / 4;
+        speed_p_acc = (4300 * 0.07) / 6;
       }
       else if(abs_error >= 6 && abs_error < 8){
-        speed_p_dea = (3500 * 0.857) / 6;
-        speed_p_acc = (3500 * 0.143) / 8;                       // 1 / 7
+        speed_p_dea = (4500 * 0.93) / 6;
+        speed_p_acc = (4500 * 0.07) / 8;                       // 1 / 7
       }
       else if(abs_error >= 8 && abs_error < 10){
-        speed_p_dea = (3700 * 0.875) / 8;
-        speed_p_acc = (3700 * 0.125) / 10;                      // 1 / 7
+        speed_p_dea = (4700 * 0.94) / 8;
+        speed_p_acc = (4700 * 0.06) / 10;                      // 1 / 7
       }
       else if(abs_error >= 10 && abs_error < 11){
-        speed_p_dea = (3900 * 0.9) / 10;
-        speed_p_acc = (3900 * 0.1) / 11;                      // 1 / 8
+        speed_p_dea = (4900 * 0.92) / 10;
+        speed_p_acc = (4900 * 0.08) / 11;                      // 1 / 8
       }
       else if(abs_error >= 11 && abs_error < 13){
-        speed_p_dea = (4000 * 0.9) / 11;
-        speed_p_acc = (4000 * 0.1) / 13;                      // 1 / 8
+        speed_p_dea = (5100 * 0.88) / 11;
+        speed_p_acc = (5100 * 0.12) / 13;                      // 1 / 8
       }
       else if(abs_error >= 13 && abs_error < 15){
-        speed_p_dea = (4200 * 0.833) / 13;
-        speed_p_acc = (4200 * 0.167) / 15;                      // 1 / 6
+        speed_p_dea = (5100 * 0.88) / 13;
+        speed_p_acc = (5100 * 0.12) / 15;                      // 1 / 6
       }
       else if(abs_error >= 15){
-        speed_p_dea = (4200 * 0.833) / 15;
-        speed_p_acc = (4200 * 0.167) / 15;
+        speed_p_dea = (5100 * 0.88) / 15;
+        speed_p_acc = (5100 * 0.12) / 15;
       }
       i = 0;
     }
@@ -755,12 +755,12 @@ void main(void){
       speed_right = 0;
     
     if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
-      INIT_SPEED = 3000;
-      INIT_SPEED = 3000;
+      INIT_SPEED = 2800;
+      INIT_SPEED = 2800;
     }
     else{
-      INIT_SPEED = 4000;
-      INIT_SPEED = 4000;
+      INIT_SPEED = 4500;
+      INIT_SPEED = 4500;
     }
     
     //改变速度和舵机输出
@@ -771,6 +771,8 @@ void main(void){
     speed_adj_res(speed_left, speed_right);
     turn(turn_change_c, INIT_ANGLE);
     
+    if(island_flag == 1 && turn_flag == 1)
+      DELAY_MS(10);
     pre_turn_err = turn_err;
     
     i += 1;
