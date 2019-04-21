@@ -22,15 +22,16 @@ uint8 img[CAMERA_H][CAMERA_W];
 //舵机右左最大值，用作输入限制（占空比，单位万分之）
 uint32 ANGLE_UPPER_LIMIT = 860;
 uint32 ANGLE_LOWER_LIMIT = 410;
-uint32 SPEED_UPPER_LIMIT = 10000;
+uint32 SPEED_UPPER_LIMIT = 5000;
 
 //速度及舵机角度初始值（占空比，单位万分之）
 //430（左）- 850 （右）
 uint32 INIT_ANGLE = 637;
-uint32 INIT_SPEED = 4000;
+uint32 INIT_SPEED = 3500;
 
 //摄像头参考线纵坐标
 int Y_REF_STD = 30;
+int Y_CHANGED = 0;
 
 int exit_flag1 = 0, exit_flag2 = 0, exit_flag = 0, enable_flag = 1;
 int wall_flag = 1, island_flag = 0, turn_flag = 0;
@@ -212,15 +213,32 @@ int turn_error(uint8 img[][CAMERA_W])
       lower_cross = black_right;
       upper_cross = black_left;
     }
-    if(upper_cross <= 7)
-      y_ref = lower_cross;
-    else
-      y_ref = upper_cross;
+    int black_lines = 0;
+//    for(int i = upper_cross; i >= 0; i--){
+//      int white_pixels = 0;
+//      for(int j = 0; j < CAMERA_W; j++){
+//        if(img[i][j] == 0xFF)
+//          white_pixels += 1;
+//      }
+//      if(white_pixels == 0)
+//        black_lines += 1;
+//    }
+    if(black_lines <= 5){
+      if(upper_cross <= 7)
+        y_ref = lower_cross;
+      else
+        y_ref = upper_cross;
+      gpio_set(PTA9, 0);
+    }
+    Y_CHANGED = y_ref;
 //    while(img[y_ref][0] == 0xFF || img[y_ref][CAMERA_W - 1] == 0xFF)
 //      y_ref += 1;
   }
-  else
+  else{
+    gpio_set(PTA9, 1);
     y_ref = Y_REF_STD;
+    Y_CHANGED = 0;
+  }
   
   // y_ref调整
   int count = 0;
@@ -328,11 +346,12 @@ int turn_error(uint8 img[][CAMERA_W])
     if(img[right_start + 2][60] == 0x00)
       island_flag = 0;
     
+    //区别十字和环岛
     if( abs(left_start - right_start) <= 3)
       island_flag = 0;
     
-    if( !((img[24][0] == 0x00 && img[24][CAMERA_W-1] == 0xFF) && 
-          (img[25][0] == 0x00 && img[25][CAMERA_W-1] == 0xFF)) )
+    if( !((img[right_start + 1][0] == 0x00 && img[right_start + 1][CAMERA_W-1] == 0xFF) && 
+          (img[right_start + 2][0] == 0x00 && img[right_start + 2][CAMERA_W-1] == 0xFF)) )
       island_flag = 0;
     
     if(right_start - left_end_disturb >= 2)
@@ -378,13 +397,24 @@ int turn_error(uint8 img[][CAMERA_W])
     
     
     //根据黑色区域的长度来判断是否应该进入环岛
-    if(max_length <= 20 && max_length >= 5)
-      turn_flag = 0;
-    else if(max_length <= 5 && max_length >= 0)
-      turn_flag = 1;
+    int temp_var = 0;
+    if(right_start < 18){
+      if( max_length <= 20 && max_length > 5 )
+        temp_var = 0;
+    }
+    else
+      temp_var = 1;
+    turn_flag = temp_var;
+    
+    
+    
     //end of 转入判断条件
-    if(island_flag == 1 && turn_flag ==  1)
+    if(island_flag == 1 && turn_flag ==  1){
+//      gpio_set(PTA9, 0);
       enter_counter = 5;
+    }
+//    else
+//      gpio_set(PTA9, 1);
     //end of 入环岛
     
     //出环岛
@@ -414,18 +444,17 @@ int turn_error(uint8 img[][CAMERA_W])
       lower_bound = left_bound;
     }
     
-    if(upper_bound > 18 && upper_bound < 30){   
-      for(int i = 0; i < upper_bound; i++){
-        int count = 0;
-        for(int j = 0; j < CAMERA_W; j++){
-          if(img[upper_bound - i][j] == 0x00)
-            count ++;
-        }
-        if(count >= 75)
-          exit_flag1 += 1;
+    
+    for(int i = 0; i < upper_bound; i++){
+      int count = 0;
+      for(int j = 0; j < CAMERA_W; j++){
+        if(img[upper_bound - i][j] == 0x00)
+          count ++;
       }
+      if(count >= 75)
+        exit_flag1 += 1;
     }
-    if(lower_bound > 18 && lower_bound < 50){ 
+    if(lower_bound >= 24 && lower_bound < 30){ 
       for(int i = lower_bound + 1; i < 60; i++){
         int count = 0;
         for(int j = 0; j < CAMERA_W; j++){
@@ -442,11 +471,11 @@ int turn_error(uint8 img[][CAMERA_W])
       if(img[upper_bound][i] == 0xFF)
         enter_white += 1;
     } 
-    if(enter_white == 0 && out_flag == 1 && abs(upper_bound - lower_bound) <= 6 && exit_flag1 >= 5 && exit_flag2 == 59 - lower_bound){
+    if(enter_white == 0 && out_flag == 1 && abs(upper_bound - lower_bound) <= 8 && exit_flag1 >= 5 && exit_flag2 == 59 - lower_bound){
       island_flag = 0;
       turn_flag = 0;
       exit_flag = 1; 
-      exit_counter = 25;
+      exit_counter = 20;
       enable_flag = 0;
       reEnter_flag = 1;
       for(int i = 30; i >= 0; i--){
@@ -456,17 +485,8 @@ int turn_error(uint8 img[][CAMERA_W])
         }
       }
     }
-    printf("L:%d, R: %d\n", upper_bound, lower_bound);
   }
-  //end of 出环岛
-  
-  //输出数值处
-  //  printf("%d, %d, %d, \n", island_flag, turn_flag, exit_flag);
-  //  printf("%d   %d\n",enable_flag, cross_flag);
-  
-  //  if(img[30][0] == 0x00 && img[30][CAMERA_W] == 0x00)
-  //    y_ref = 30;
-  
+  //end of 出环岛 
   
   //激活环岛判断
   if(reEnter_flag == 1 && img[30][0] == 0x00 && img[30][CAMERA_W-1] == 0x00){
@@ -476,11 +496,11 @@ int turn_error(uint8 img[][CAMERA_W])
     exit_flag = 0;
     out_flag = 0;
     Y_REF_STD = 30;
-    gpio_set(PTA9, 0);
+//    gpio_set(PTA9, 0);
     gpio_set(PTA19, 1);
   }
-  else
-    gpio_set(PTA9, 1);
+//  else
+//    gpio_set(PTA9, 1);
   
   if( enter_counter == 1){
     Y_REF_STD = 10;
@@ -489,8 +509,8 @@ int turn_error(uint8 img[][CAMERA_W])
   //end of 激活环岛判断
   
   //转向算法 
-  if( (island_flag == 1 && turn_flag == 1) ){
-    x_comp = 39 + 10 + 89 / 2;
+  if( enter_counter >= 1 && (island_flag == 1 && turn_flag == 1) ){
+    x_comp = 39 + 89 / 2;
     out_flag = 1;
     reEnter_flag = 0;
     enter_counter -= 1;
@@ -558,7 +578,6 @@ int turn_error(uint8 img[][CAMERA_W])
     }
   }
   //end of 转向算法
-  
   return (x_comp - x_base);
 }
 
@@ -571,32 +590,69 @@ int get_PID(int error, int pre_error)
   int diff = error - pre_error;
   ref = abs(error);
   
-  if(ref >= 0 && ref < 2)
-    P = 0;
-  else if(ref >= 2 && ref < 4)
-    P = 3;
-  else if(ref >= 4 && ref < 5)
-    P = 5;
-  else if(ref >= 5 && ref < 6)
-    P = 9;
-  else if(ref >= 6 && ref < 8)
-    P = 12;
-  else if(ref >= 8 && ref < 9)
-    P = 13;
-  else if(ref >= 9 && ref < 11)
-    P = 18;
-  else if(ref >= 11 && ref < 13)
-    P = 19;
-  else if(ref >= 13 && ref < 15)
-    P = 18;
-  else if(ref >= 15)
-    P = 17;
-  
-  if( abs(diff) >= 0 && abs(diff) < 5)
-    D = 40;
-  else if(abs(diff) >= 5)
-    D = 80;
-  
+  if(Y_CHANGED == 0 || Y_CHANGED > 15){
+    if(ref >= 0 && ref < 2)
+      P = 0;
+    else if(ref >= 2 && ref < 4)
+      P = 3;
+    else if(ref >= 4 && ref < 5)
+      P = 5;
+    else if(ref >= 5 && ref < 6)
+      P = 9;
+    else if(ref >= 6 && ref < 8)
+      P = 12;
+    else if(ref >= 8 && ref < 9)
+      P = 13;
+    else if(ref >= 9 && ref < 11)
+      P = 18;
+    else if(ref >= 11 && ref < 13)
+      P = 19;
+    else if(ref >= 13 && ref < 15)
+      P = 18;
+    else if(ref >= 15)
+      P = 17;
+    
+    if( abs(diff) > 0 && abs(diff) <= 1)
+      D = 40;
+    else if( abs(diff) > 1 && abs(diff) <= 3)
+      D = 40;
+    else if( abs(diff) > 3 && abs(diff) <= 5)
+      D = 80;
+    else if(abs(diff) > 5)
+      D = 100;
+  }
+  else if(Y_CHANGED >= 1 && Y_CHANGED <= 15){
+    if(ref >= 0 && ref < 2)
+      P = 0;
+    else if(ref >= 2 && ref < 4)
+      P = 3;
+    else if(ref >= 4 && ref < 5)
+      P = 5;
+    else if(ref >= 5 && ref < 6)
+      P = 9;
+    else if(ref >= 6 && ref < 8)
+      P = 12;
+    else if(ref >= 8 && ref < 9)
+      P = 13;
+    else if(ref >= 9 && ref < 11)
+      P = 18;
+    else if(ref >= 11 && ref < 13)
+      P = 19;
+    else if(ref >= 13 && ref < 15)
+      P = 18;
+    else if(ref >= 15)
+      P = 17;
+    
+    if( abs(diff) > 0 && abs(diff) <= 1)
+      D = 50;
+    else if( abs(diff) > 1 && abs(diff) <= 3)
+      D = 80;
+    else if( abs(diff) > 3 && abs(diff) <= 5)
+      D = 80;
+    else if(abs(diff) > 5)
+      D = 100;
+  }
+  printf("ref: %d\n", ref);
   output = error * P + diff * D;
   
   return output;
@@ -698,14 +754,14 @@ void main(void){
     if(speed_right >= 10000)
       speed_right = 0;
     
-    if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
-      INIT_SPEED = 2200;
-      INIT_SPEED = 2200;
-    }
-    else{
-      INIT_SPEED = 4000;
-      INIT_SPEED = 4000;
-    }
+//    if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
+//      INIT_SPEED = 3500;
+//      INIT_SPEED = 3500;
+//    }
+//    else{
+//      INIT_SPEED = 3500;
+//      INIT_SPEED = 3500;
+//    }
     
     //改变速度和舵机输出
     if(exit_counter <= 5 && exit_counter > 0 && j > 0){
