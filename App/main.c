@@ -398,10 +398,10 @@ int turn_error(uint8 img[][CAMERA_W])
     
     //根据黑色区域的长度来判断是否应该进入环岛
     int temp_var = 0;
-    if(right_start < 18){
+//    if(right_start < 18){
       if( max_length <= 20 && max_length > 5 )
         temp_var = 0;
-    }
+//    }
     else
       temp_var = 1;
     turn_flag = temp_var;
@@ -625,17 +625,17 @@ int get_PID(int error, int pre_error)
     if(ref >= 0 && ref < 2)
       P = 0;
     else if(ref >= 2 && ref < 4)
-      P = 3;
+      P = 7;
     else if(ref >= 4 && ref < 5)
-      P = 5;
+      P = 8;
     else if(ref >= 5 && ref < 6)
       P = 9;
     else if(ref >= 6 && ref < 8)
-      P = 12;
+      P = 17;
     else if(ref >= 8 && ref < 9)
-      P = 13;
-    else if(ref >= 9 && ref < 11)
       P = 18;
+    else if(ref >= 9 && ref < 11)
+      P = 19;
     else if(ref >= 11 && ref < 13)
       P = 19;
     else if(ref >= 13 && ref < 15)
@@ -644,11 +644,11 @@ int get_PID(int error, int pre_error)
       P = 17;
     
     if( abs(diff) > 0 && abs(diff) <= 1)
-      D = 50;
+      D = 60;
     else if( abs(diff) > 1 && abs(diff) <= 3)
-      D = 80;
+      D = 100;
     else if( abs(diff) > 3 && abs(diff) <= 5)
-      D = 80;
+      D = 120;
     else if(abs(diff) > 5)
       D = 100;
   }
@@ -707,32 +707,32 @@ void main(void){
       }
       //speed_p_acc, speed_p_dea分别为加减速p值
       else if(abs_error >= 4 && abs_error < 6){
-        speed_p_dea = (3000 * 0.9) / 4;
-        speed_p_acc = (3000 * 0.1) / 6;
+        speed_p_dea = (3800 * 0.92) / 4;
+        speed_p_acc = (3800 * 0.08) / 6;
       }
       else if(abs_error >= 6 && abs_error < 8){
-        speed_p_dea = (3500 * 0.857) / 6;
-        speed_p_acc = (3500 * 0.143) / 8;                       // 1 / 7
+        speed_p_dea = (3900 * 0.94) / 6;
+        speed_p_acc = (3900 * 0.06) / 8;                       // 1 / 7
       }
       else if(abs_error >= 8 && abs_error < 10){
-        speed_p_dea = (3700 * 0.875) / 8;
-        speed_p_acc = (3700 * 0.125) / 10;                      // 1 / 7
+        speed_p_dea = (4100 * 0.95) / 8;
+        speed_p_acc = (4100 * 0.05) / 10;                      // 1 / 7
       }
       else if(abs_error >= 10 && abs_error < 11){
-        speed_p_dea = (3900 * 0.9) / 10;
-        speed_p_acc = (3900 * 0.1) / 11;                      // 1 / 8
+        speed_p_dea = (4500 * 0.95) / 10;
+        speed_p_acc = (4500 * 0.05) / 11;                      // 1 / 8
       }
       else if(abs_error >= 11 && abs_error < 13){
-        speed_p_dea = (4000 * 0.9) / 11;
-        speed_p_acc = (4000 * 0.1) / 13;                      // 1 / 8
+        speed_p_dea = (4700 * 0.88) / 11;
+        speed_p_acc = (4700 * 0.12) / 13;                      // 1 / 8
       }
       else if(abs_error >= 13 && abs_error < 15){
-        speed_p_dea = (4200 * 0.833) / 13;
-        speed_p_acc = (4200 * 0.167) / 15;                      // 1 / 6
+        speed_p_dea = (4900 * 0.85) / 13;
+        speed_p_acc = (4900 * 0.15) / 15;                      // 1 / 6
       }
       else if(abs_error >= 15){
-        speed_p_dea = (4200 * 0.833) / 15;
-        speed_p_acc = (4200 * 0.167) / 15;
+        speed_p_dea = (4900 * 0.82) / 15;
+        speed_p_acc = (4900 * 0.18) / 15;
       }
       i = 0;
     }
