@@ -678,6 +678,7 @@ int induc_PID(float err_ratio, float pre_err_ratio){
   return output;
 }
 void main(void){
+  DELAY_MS(2000);
   int i = 0, j = 20;
   int turn_err, turn_change_c, abs_error, pre_turn_err = 0;
   uint32 speed_left = INIT_SPEED, speed_right = INIT_SPEED;
@@ -698,8 +699,8 @@ void main(void){
     if(i == 2){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小，abs_error为摄像头计算赛道中线与摄像头视野中线的差值
       if(abs_error >= 0 && abs_error < 2){
-        speed_left = INIT_SPEED + 100;
-        speed_right = INIT_SPEED + 100;
+        speed_p_dea = 0;
+        speed_p_acc = 0;
       }
       else if(abs_error >= 2 && abs_error < 4){
         speed_p_dea = 0;
@@ -707,32 +708,32 @@ void main(void){
       }
       //speed_p_acc, speed_p_dea分别为加减速p值
       else if(abs_error >= 4 && abs_error < 6){
-        speed_p_dea = (4300 * 0.93) / 4;
-        speed_p_acc = (4300 * 0.07) / 6;
+        speed_p_dea = (4800 * 0.95) / 4;
+        speed_p_acc = (4800 * 0.05) / 6;
       }
       else if(abs_error >= 6 && abs_error < 8){
-        speed_p_dea = (4500 * 0.93) / 6;
-        speed_p_acc = (4500 * 0.07) / 8;                       // 1 / 7
+        speed_p_dea = (4900 * 0.97) / 6;
+        speed_p_acc = (4900 * 0.03) / 8;                       // 1 / 7
       }
       else if(abs_error >= 8 && abs_error < 10){
-        speed_p_dea = (4700 * 0.94) / 8;
-        speed_p_acc = (4700 * 0.06) / 10;                      // 1 / 7
+        speed_p_dea = (5200 * 0.96) / 8;
+        speed_p_acc = (5200 * 0.04) / 10;                      // 1 / 7
       }
       else if(abs_error >= 10 && abs_error < 11){
-        speed_p_dea = (4900 * 0.92) / 10;
-        speed_p_acc = (4900 * 0.08) / 11;                      // 1 / 8
+        speed_p_dea = (5500 * 0.91) / 10;
+        speed_p_acc = (5500 * 0.09) / 11;                      // 1 / 8
       }
       else if(abs_error >= 11 && abs_error < 13){
-        speed_p_dea = (5100 * 0.88) / 11;
-        speed_p_acc = (5100 * 0.12) / 13;                      // 1 / 8
+        speed_p_dea = (5800 * 0.86) / 11;
+        speed_p_acc = (5800 * 0.14) / 13;                      // 1 / 8
       }
       else if(abs_error >= 13 && abs_error < 15){
-        speed_p_dea = (5100 * 0.88) / 13;
-        speed_p_acc = (5100 * 0.12) / 15;                      // 1 / 6
+        speed_p_dea = (6100 * 0.82) / 13;
+        speed_p_acc = (6100 * 0.18) / 15;                      // 1 / 6
       }
       else if(abs_error >= 15){
-        speed_p_dea = (5100 * 0.88) / 15;
-        speed_p_acc = (5100 * 0.12) / 15;
+        speed_p_dea = (6100 * 0.82) / 15;
+        speed_p_acc = (6100 * 0.18) / 15;
       }
       i = 0;
     }
