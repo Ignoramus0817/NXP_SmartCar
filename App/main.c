@@ -398,10 +398,10 @@ int turn_error(uint8 img[][CAMERA_W])
     
     //根据黑色区域的长度来判断是否应该进入环岛
     int temp_var = 0;
-    if(right_start < 18){
+//    if(right_start < 18){
       if( max_length <= 20 && max_length > 5 )
         temp_var = 0;
-    }
+//    }
     else
       temp_var = 1;
     turn_flag = temp_var;
@@ -613,11 +613,11 @@ int get_PID(int error, int pre_error)
       P = 17;
     
     if( abs(diff) > 0 && abs(diff) <= 1)
-      D = 45;
-    else if( abs(diff) > 1 && abs(diff) <= 3)
       D = 50;
-    else if( abs(diff) > 3 && abs(diff) <= 5)
+    else if( abs(diff) > 1 && abs(diff) <= 3)
       D = 80;
+    else if( abs(diff) > 3 && abs(diff) <= 5)
+      D = 100;
     else if(abs(diff) > 5)
       D = 100;
   }
@@ -625,17 +625,17 @@ int get_PID(int error, int pre_error)
     if(ref >= 0 && ref < 2)
       P = 0;
     else if(ref >= 2 && ref < 4)
-      P = 3;
+      P = 7;
     else if(ref >= 4 && ref < 5)
-      P = 5;
+      P = 8;
     else if(ref >= 5 && ref < 6)
       P = 9;
     else if(ref >= 6 && ref < 8)
-      P = 12;
+      P = 17;
     else if(ref >= 8 && ref < 9)
-      P = 14;
-    else if(ref >= 9 && ref < 11)
       P = 18;
+    else if(ref >= 9 && ref < 11)
+      P = 19;
     else if(ref >= 11 && ref < 13)
       P = 19;
     else if(ref >= 13 && ref < 15)
@@ -644,11 +644,11 @@ int get_PID(int error, int pre_error)
       P = 17;
     
     if( abs(diff) > 0 && abs(diff) <= 1)
-      D = 50;
+      D = 60;
     else if( abs(diff) > 1 && abs(diff) <= 3)
-      D = 80;
+      D = 100;
     else if( abs(diff) > 3 && abs(diff) <= 5)
-      D = 80;
+      D = 120;
     else if(abs(diff) > 5)
       D = 100;
   }
@@ -755,8 +755,8 @@ void main(void){
       speed_right = 0;
     
     if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
-      INIT_SPEED = 2800;
-      INIT_SPEED = 2800;
+      INIT_SPEED = 3000;
+      INIT_SPEED = 3000;
     }
     else{
       INIT_SPEED = 4500;
