@@ -27,7 +27,7 @@ uint32 SPEED_UPPER_LIMIT = 5000;
 //速度及舵机角度初始值（占空比，单位万分之）
 //430（左）- 850 （右）
 uint32 INIT_ANGLE = 637;
-uint32 INIT_SPEED = 3500;
+uint32 INIT_SPEED = 4000;
 
 //摄像头参考线纵坐标
 int Y_REF_STD = 30;
@@ -754,14 +754,14 @@ void main(void){
     if(speed_right >= 10000)
       speed_right = 0;
     
-//    if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
-//      INIT_SPEED = 3500;
-//      INIT_SPEED = 3500;
-//    }
-//    else{
-//      INIT_SPEED = 3500;
-//      INIT_SPEED = 3500;
-//    }
+    if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
+      INIT_SPEED = 3000;
+      INIT_SPEED = 3000;
+    }
+    else{
+      INIT_SPEED = 4000;
+      INIT_SPEED = 4000;
+    }
     
     //改变速度和舵机输出
     if(exit_counter <= 5 && exit_counter > 0 && j > 0){
