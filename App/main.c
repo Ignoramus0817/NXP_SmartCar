@@ -231,6 +231,7 @@ int turn_error(uint8 img[][CAMERA_W])
       gpio_set(PTA9, 0);
     }
     Y_CHANGED = y_ref;
+    INIT_SPEED = 4000;
 //    while(img[y_ref][0] == 0xFF || img[y_ref][CAMERA_W - 1] == 0xFF)
 //      y_ref += 1;
   }
@@ -699,8 +700,8 @@ void main(void){
     if(i == 2){
       //分段调整速度， 直道加速弯道减速，分段依据弯道大小，abs_error为摄像头计算赛道中线与摄像头视野中线的差值
       if(abs_error >= 0 && abs_error < 2){
-        speed_left = INIT_SPEED + 100;
-        speed_right = INIT_SPEED + 100;
+        speed_p_dea = 0;
+        speed_p_acc = 0;
       }
       else if(abs_error >= 2 && abs_error < 4){
         speed_p_dea = 0;
@@ -756,8 +757,8 @@ void main(void){
       speed_right = 0;
     
     if(island_flag == 1 || out_flag == 1 || exit_flag == 1){
-      INIT_SPEED = 3000;
-      INIT_SPEED = 3000;
+      INIT_SPEED = 3200;
+      INIT_SPEED = 3200;
     }
     else{
       INIT_SPEED = 4000;
