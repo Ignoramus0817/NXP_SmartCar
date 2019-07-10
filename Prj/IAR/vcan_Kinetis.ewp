@@ -6236,6 +6236,18 @@
             <name>$PROJ_DIR$\..\..\App\IMG_GET.h</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\App\inductor.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\inductor.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\init.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\init.h</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\App\l3g4200d.c</name>
         </file>
         <file>
@@ -6258,6 +6270,18 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\App\Inc\PORT_cfg.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\speed.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\speed.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\tracking.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\tracking.h</name>
         </file>
     </group>
     <group>
